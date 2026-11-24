@@ -1,0 +1,9 @@
+[
+  {
+    "name": "Example Tool",
+    "folder": "example-tool",
+    "description": "Replace this entry with your first real tool. Delete it once you have one.",
+    "author": "Your Name",
+    "tags": ["example"]
+  }
+]

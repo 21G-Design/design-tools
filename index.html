@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Design Tools</title>
+<style>
+  :root {
+    --bg: #fafaf9; --card: #fff; --ink: #1c1917; --muted: #78716c;
+    --line: #e7e5e4; --accent: #2563eb;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #0c0a09; --card: #1c1917; --ink: #f5f5f4; --muted: #a8a29e; --line: #292524; --accent: #60a5fa; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--bg); color: var(--ink); }
+  header, main { max-width: 1040px; margin: 0 auto; padding: 0 24px; }
+  header { padding-top: 56px; padding-bottom: 24px; }
+  h1 { font-size: 32px; margin: 0 0 8px; letter-spacing: -0.02em; }
+  header p { margin: 0; color: var(--muted); }
+  .controls { display: flex; gap: 8px; flex-wrap: wrap; margin: 24px 0 8px; }
+  input[type=search] { flex: 1 1 240px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: var(--ink); font: inherit; }
+  .tag-btn { padding: 6px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--card); color: var(--ink); font: inherit; font-size: 14px; cursor: pointer; }
+  .tag-btn[aria-pressed=true] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; padding: 16px 0 64px; }
+  .card { display: flex; flex-direction: column; gap: 8px; padding: 20px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; text-decoration: none; color: inherit; transition: border-color .15s, transform .15s; }
+  .card:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .card h2 { font-size: 18px; margin: 0; }
+  .card p { margin: 0; color: var(--muted); font-size: 14px; flex: 1; }
+  .meta { display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: var(--muted); }
+  .tags span { display: inline-block; margin-left: 4px; padding: 2px 8px; border-radius: 999px; background: var(--bg); border: 1px solid var(--line); font-size: 12px; }
+  .empty { color: var(--muted); padding: 32px 0; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Design Tools</h1>
+  <p>Shared HTML tools built by the team. Click a card to open the tool.</p>
+  <div class="controls">
+    <input type="search" id="q" placeholder="Search tools…" aria-label="Search tools">
+  </div>
+  <div class="controls" id="tags"></div>
+</header>
+<main>
+  <div class="grid" id="grid"></div>
+</main>
+<script>
+  let tools = [], activeTag = null;
+  const grid = document.getElementById('grid');
+  const q = document.getElementById('q');
+  const tagsEl = document.getElementById('tags');
+
+  function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+  function render() {
+    const term = q.value.trim().toLowerCase();
+    const list = tools.filter(t =>
+      (!activeTag || (t.tags || []).includes(activeTag)) &&
+      (!term || [t.name, t.description, t.author, ...(t.tags || [])].join(' ').toLowerCase().includes(term))
+    );
+    grid.innerHTML = list.length ? list.map(t => `
+      <a class="card" href="tools/${encodeURIComponent(t.folder)}/">
+        <h2>${esc(t.name)}</h2>
+        <p>${esc(t.description)}</p>
+        <div class="meta"><span>${esc(t.author)}</span>
+          <span class="tags">${(t.tags || []).map(x => `<span>${esc(x)}</span>`).join('')}</span></div>
+      </a>`).join('') : '<p class="empty">No tools match.</p>';
+  }
+
+  function renderTags() {
+    const all = [...new Set(tools.flatMap(t => t.tags || []))].sort();
+    tagsEl.innerHTML = ['All', ...all].map(tag =>
+      `<button class="tag-btn" aria-pressed="${(tag === 'All' && !activeTag) || tag === activeTag}" data-tag="${esc(tag)}">${esc(tag)}</button>`).join('');
+  }
+
+  tagsEl.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    activeTag = b.dataset.tag === 'All' ? null : b.dataset.tag;
+    renderTags(); render();
+  });
+  q.addEventListener('input', render);
+
+  fetch('tools.json').then(r => r.json()).then(data => {
+    tools = data.sort((a, b) => a.name.localeCompare(b.name));
+    renderTags(); render();
+  }).catch(() => { grid.innerHTML = '<p class="empty">Couldn’t load tools.json — check it’s valid JSON.</p>'; });
+</script>
+</body>
+</html>
