@@ -11,19 +11,18 @@ design-tools/
 ├── index.html        ← landing page (lists every tool automatically)
 ├── tools.json        ← the list of tools — add yours here
 ├── README.md
-└── tools/
-    ├── colour-contrast/
-    │   └── index.html
-    └── spacing-scale/
-        ├── index.html
-        └── styles.css
+├── colour-contrast/
+│   └── index.html
+└── spacing-scale/
+    ├── index.html
+    └── src/
 ```
 
-Each tool lives in its own folder under `tools/`, and its main file must be called `index.html`.
+Each tool lives in its own folder at the top level of the repo, and its main file must be called `index.html`.
 
 ## Adding a tool (no Git needed)
 
-1. **Upload your files.** On your computer, put your tool in a folder named in lowercase with hyphens, e.g. `type-scale-generator`, with the main file called `index.html`. On the repo page, open the `tools` folder, click **Add file → Upload files**, and drag the whole folder in. GitHub keeps the folder structure.
+1. **Upload your files.** On your computer, put your tool in a folder named in lowercase with hyphens, e.g. `type-scale-generator`, with the main file called `index.html`. On the repo's main page, click **Add file → Upload files**, and drag the whole folder in. GitHub keeps the folder structure.
 2. **List it on the landing page.** Open `tools.json`, click the ✏️ pencil, and add an entry:
    ```json
    {

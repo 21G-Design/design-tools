@@ -59,7 +59,7 @@
       (!term || [t.name, t.description, t.author, ...(t.tags || [])].join(' ').toLowerCase().includes(term))
     );
     grid.innerHTML = list.length ? list.map(t => `
-      <a class="card" href="tools/${encodeURIComponent(t.folder)}/">
+      <a class="card" href="${encodeURIComponent(t.folder)}/">
         <h2>${esc(t.name)}</h2>
         <p>${esc(t.description)}</p>
         <div class="meta"><span>${esc(t.author)}</span>
