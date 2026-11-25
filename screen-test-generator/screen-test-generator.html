@@ -1,0 +1,551 @@
+<title>Screen Test</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;700&family=Martian+Mono:wght@300;400;500&display=swap">
+<style>
+/* Layout: same rack as SIGNAL LOST and Screen Text: sticky monitor left, control strips right; one column on phones.
+   Single dark look by choice: the card is judged against a dark surround. */
+:root{
+  --bg:#0c0e14;
+  --panel:#13161f;
+  --line:#242a3a;
+  --fg:#dfe3ee;
+  --muted:#7d859c;
+  --accent:#7d97ff;
+  --accent-ink:#0c0e14;
+  --display:"Familjen Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --mono:"Martian Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:12px;font-weight:300}
+.wrap{min-height:100%;box-sizing:border-box;display:flex;flex-direction:column;gap:14px;
+  padding-block:16px;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+header{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+h1{font-family:var(--display);font-weight:700;font-size:22px;letter-spacing:-.01em;margin:0}
+header p{margin:0;color:var(--muted);font-size:11px}
+.main{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px;align-items:start;flex:1}
+@media (max-width:820px){.main{grid-template-columns:minmax(0,1fr)} .monitor canvas{max-height:42vh}}
+.monitor{position:sticky;top:calc(env(safe-area-inset-top, 0px) + 12px);z-index:2;background:#000;border:1px solid var(--line);border-radius:6px;overflow:hidden;
+  display:flex;align-items:center;justify-content:center;min-width:0}
+.monitor canvas{display:block;width:100%;max-height:calc(100vh - 40px);height:auto;object-fit:contain}
+.monitor.drag{outline:2px dashed var(--accent);outline-offset:-8px}
+.rack{display:flex;flex-direction:column;gap:10px;min-width:0}
+.strip{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px;display:flex;flex-direction:column;gap:11px}
+.strip h2{margin:0;font-family:var(--display);font-weight:500;font-size:13px;letter-spacing:.02em;display:flex;justify-content:space-between;align-items:baseline}
+.strip h2 small{font-family:var(--mono);font-size:9.5px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;font-weight:300}
+.subhead{font-size:9.5px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin:4px 0 -4px}
+.ctl{display:flex;flex-direction:column;gap:5px}
+.ctl .row{display:flex;justify-content:space-between;gap:8px}
+.ctl output{color:var(--muted);font-variant-numeric:tabular-nums}
+.hint{color:var(--muted);font-size:10px;line-height:1.5;margin:0}
+input[type=range]{width:100%;accent-color:var(--accent);margin:0;height:18px}
+select{font:inherit;font-size:11px;color:var(--fg);background:#1b2030;border:1px solid var(--line);border-radius:4px;padding:7px 8px;width:100%}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--line);border-radius:4px;overflow:hidden}
+.seg button{border:0;border-right:1px solid var(--line);background:transparent;border-radius:0}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed=true],.toggleBtn[aria-pressed=true]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+button,.filebtn{font:inherit;font-size:11px;color:var(--fg);background:#1b2030;border:1px solid var(--line);border-radius:4px;padding:7px 9px;cursor:pointer;text-align:center;position:relative}
+button:hover,.filebtn:hover{border-color:var(--accent)}
+button:disabled{opacity:.45;cursor:not-allowed}
+button:focus-visible,.filebtn:focus-within,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:500}
+.btns{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.filebtn input{position:absolute;opacity:0;width:1px;height:1px}
+.toggle{display:flex;align-items:center;gap:8px;cursor:pointer}
+.toggle input{accent-color:var(--accent);margin:0}
+.status{min-height:14px;color:var(--muted);font-size:10px;margin:0}
+/* bar lists */
+.bars{display:flex;flex-direction:column;gap:4px}
+.bar{display:grid;grid-template-columns:28px 1fr 54px 26px 26px;gap:5px;align-items:center}
+.bar input[type=color]{width:28px;height:24px;padding:0;border:1px solid var(--line);border-radius:3px;background:none;cursor:pointer}
+.bar input[type=text]{font:inherit;font-size:11px;color:var(--fg);background:#0c0e14;border:1px solid var(--line);border-radius:3px;padding:4px 6px;min-width:0;text-transform:lowercase}
+.bar input[type=number]{font:inherit;font-size:11px;color:var(--fg);background:#0c0e14;border:1px solid var(--line);border-radius:3px;padding:4px 4px;width:100%;box-sizing:border-box}
+.bar button{padding:3px 0;font-size:11px}
+.preview{display:flex;height:16px;border-radius:3px;overflow:hidden;border:1px solid var(--line)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Screen Test</h1>
+    <p>Your colours and bar layout, played out as a worn analogue test card.</p>
+  </header>
+  <div class="main">
+    <div class="monitor" id="monitor">
+      <canvas id="cv" width="1552" height="982" aria-label="Rendered test card"></canvas>
+    </div>
+
+    <div class="rack">
+      <section class="strip">
+        <h2>Layout <small>from your design</small></h2>
+        <div class="btns">
+          <label class="filebtn">Read layout from image<input id="dfile" type="file" accept="image/*"></label>
+          <button id="dreset" type="button">Reset to design</button>
+        </div>
+        <p class="hint" id="dstate">Loaded: your 776×491 design (8 bars over cyan, magenta, yellow and black).</p>
+        <div class="ctl"><div class="row"><label for="split">Split between rows</label><output id="o-split"></output></div><input id="split" type="range" min="20" max="100" value="66"></div>
+        <p class="subhead">Top row</p>
+        <div class="preview" id="pvTop" aria-hidden="true"></div>
+        <div class="bars" id="barsTop"></div>
+        <button type="button" data-add="top">Add bar to top row</button>
+        <p class="subhead">Bottom row</p>
+        <div class="preview" id="pvBot" aria-hidden="true"></div>
+        <div class="bars" id="barsBot"></div>
+        <button type="button" data-add="bot">Add block to bottom row</button>
+        <p class="hint">Width is relative: a block of 3 is three times as wide as a block of 1. Read layout from image scans a flat design (like your PNG) for its bars, colours and split.</p>
+      </section>
+
+      <section class="strip">
+        <h2>Test card <small>signal look</small></h2>
+        <div class="seg" role="group" aria-label="Look presets">
+          <button type="button" data-look="studio" aria-pressed="false">Studio</button>
+          <button type="button" data-look="broadcast" aria-pressed="true">Broadcast</button>
+          <button type="button" data-look="vhs" aria-pressed="false">VHS</button>
+        </div>
+        <p class="subhead">Colour</p>
+        <div class="ctl"><div class="row"><label for="level">Bar level</label><output id="o-level"></output></div><input id="level" type="range" min="50" max="100" value="85"></div>
+        <div class="ctl"><div class="row"><label for="sat">Saturation</label><output id="o-sat"></output></div><input id="sat" type="range" min="0" max="150" value="100"></div>
+        <div class="ctl"><div class="row"><label for="lift">Black lift</label><output id="o-lift"></output></div><input id="lift" type="range" min="0" max="40" value="4"></div>
+        <div class="ctl"><div class="row"><label for="warm">Warmth</label><output id="o-warm"></output></div><input id="warm" type="range" min="-50" max="50" value="0"></div>
+        <p class="subhead">Signal</p>
+        <div class="ctl"><div class="row"><label for="soft">Softness</label><output id="o-soft"></output></div><input id="soft" type="range" min="0" max="100" value="35"></div>
+        <div class="ctl"><div class="row"><label for="bleed">Colour bleed</label><output id="o-bleed"></output></div><input id="bleed" type="range" min="0" max="100" value="35"></div>
+        <div class="ctl"><div class="row"><label for="ring">Edge ringing</label><output id="o-ring"></output></div><input id="ring" type="range" min="0" max="100" value="20"></div>
+        <div class="ctl"><div class="row"><label for="jit">Line jitter</label><output id="o-jit"></output></div><input id="jit" type="range" min="0" max="100" value="15"></div>
+        <p class="subhead">Noise</p>
+        <div class="ctl"><div class="row"><label for="grain">Grain</label><output id="o-grain"></output></div><input id="grain" type="range" min="0" max="100" value="15"></div>
+        <div class="ctl"><div class="row"><label for="cnoise">Colour noise</label><output id="o-cnoise"></output></div><input id="cnoise" type="range" min="0" max="100" value="20"></div>
+        <div class="ctl"><div class="row"><label for="drop">Dropouts</label><output id="o-drop"></output></div><input id="drop" type="range" min="0" max="100" value="10"></div>
+        <p class="subhead">Screen</p>
+        <div class="ctl"><div class="row"><label for="hum">Hum bar</label><output id="o-hum"></output></div><input id="hum" type="range" min="0" max="100" value="10"></div>
+        <div class="ctl"><div class="row"><label for="vig">Vignette</label><output id="o-vig"></output></div><input id="vig" type="range" min="0" max="100" value="10"></div>
+        <label class="toggle"><input id="lines" type="checkbox"> Interlace lines</label>
+        <p class="hint">Studio is a clean generator feed; Broadcast matches the satellite-feed cards; VHS is the washed-out, bleeding, speckled tape look of the GIF.</p>
+      </section>
+
+      <section class="strip">
+        <h2>Output</h2>
+        <div class="ctl"><label for="size">Still size</label>
+          <select id="size">
+            <option value="design">Design ratio · 1552×982</option>
+            <option value="hd">16:9 · 1920×1080</option>
+            <option value="sd">4:3 · 1440×1080</option>
+            <option value="mpu">MPU · 1200×1000</option>
+          </select>
+        </div>
+        <button id="saveStill" class="primary" type="button">Save PNG</button>
+        <p class="subhead">Motion</p>
+        <div class="ctl"><div class="row"><label for="fps">Speed</label><output id="o-fps"></output></div><input id="fps" type="range" min="4" max="25" value="12"></div>
+        <div class="ctl"><div class="row"><label for="gframes">GIF length</label><output id="o-gframes"></output></div><input id="gframes" type="range" min="6" max="48" value="18"></div>
+        <div class="ctl"><label for="gsize">GIF width</label>
+          <select id="gsize">
+            <option value="480">480 px</option>
+            <option value="640" selected>640 px</option>
+            <option value="800">800 px</option>
+            <option value="1000">1000 px</option>
+          </select>
+        </div>
+        <div class="btns">
+          <button id="play" class="toggleBtn" type="button" aria-pressed="false">Play</button>
+          <button id="saveGif" type="button">Save GIF</button>
+        </div>
+        <p class="status" id="status"></p>
+        <p class="hint">The GIF loops seamlessly at the chosen speed. Grain and colour noise make GIFs larger; drop them, or the width, if the file is too big.</p>
+        <img id="saved" alt="Rendered file; right-click or long-press to save" hidden style="max-width:100%;border:1px solid var(--line);border-radius:4px">
+      </section>
+    </div>
+  </div>
+</div>
+
+<script>
+// ---------- layout (defaults measured from the 776x491 design) ----------
+const DESIGN = {
+  split: 323/491, aspect: 776/491,
+  top: ['#49ce99','#ff5555','#00e3ff','#fafafa','#ff00cf','#e6ff00','#49ce99','#ff5555'].map(c => ({c, w:1})),
+  bot: [{c:'#00e3ff', w:1}, {c:'#ff00cf', w:1}, {c:'#e6ff00', w:1}, {c:'#020605', w:3}]
+};
+let LAY = JSON.parse(JSON.stringify(DESIGN));
+const P = {level:.85, sat:1, lift:.04, warm:0, soft:.35, bleed:.35, ring:.2, jit:.15, grain:.15, cnoise:.2, drop:.1, hum:.1, vig:.1, markers:false, lines:false,
+           fps:12, gframes:18, play:false};
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d', {willReadFrequently:true});
+const SIZES = {design:[1552,982], hd:[1920,1080], sd:[1440,1080], mpu:[1200,1000]};
+
+// ---------- helpers ----------
+function hash(a, b, c){
+  let h = Math.imul(a|0, 0x27d4eb2d) ^ Math.imul((b|0) + 0x3c6ef372, 0x165667b1) ^ Math.imul((c|0) + 0x1b873593, 0x9e3779b1);
+  h ^= h>>>15; h = Math.imul(h, 0x85ebca6b); h ^= h>>>13; h = Math.imul(h, 0xc2b2ae35); h ^= h>>>16; return (h>>>0)/4294967296;
+}
+function vn(x, k1, k2){ const i = Math.floor(x); let t = x - i; t = t*t*(3-2*t); const a = hash(i, k1, k2); return a + (hash(i+1, k1, k2) - a)*t; }
+const hex2rgb = h => { const n = parseInt(h.slice(1), 16); return [n>>16 & 255, n>>8 & 255, n & 255]; };
+function boxH(S, D, w, h, r){
+  if (r < 1){ D.set(S); return; }
+  r = Math.round(r); const inv = 1/(2*r + 1);
+  for (let y=0; y<h; y++){
+    const o = y*w; let acc = 0;
+    for (let k=-r; k<=r; k++) acc += S[o + Math.min(w-1, Math.max(0, k))];
+    for (let x=0; x<w; x++){ D[o+x] = acc*inv; acc += S[o + Math.min(w-1, x+r+1)] - S[o + Math.max(0, x-r)]; }
+  }
+}
+function boxV(S, D, w, h, r){
+  if (r < 1){ D.set(S); return; }
+  r = Math.round(r); const inv = 1/(2*r + 1);
+  for (let x=0; x<w; x++){
+    let acc = 0;
+    for (let k=-r; k<=r; k++) acc += S[Math.min(h-1, Math.max(0, k))*w + x];
+    for (let y=0; y<h; y++){ D[y*w+x] = acc*inv; acc += S[Math.min(h-1, y+r+1)*w + x] - S[Math.max(0, y-r)*w + x]; }
+  }
+}
+
+// ---------- the card ----------
+// t = frame number; loopN = frames in a seamless loop (0 = still). Everything time-varying is
+// driven by phase = t/loopN so the GIF wraps without a jump.
+function renderCard(W, H, t, loopN){
+  const k = W/776, n = W*H;
+  const R = new Float32Array(n), G = new Float32Array(n), B = new Float32Array(n);
+  // 1. flat layout, with bar level, saturation, black lift and warmth applied as a signal would
+  const splitY = Math.round(H*Math.min(1, LAY.split));
+  const fillRow = (items, y0, y1) => {
+    const tot = items.reduce((s, b) => s + Math.max(0, +b.w || 0), 0) || 1;
+    let acc = 0;
+    items.forEach(b => {
+      const x0 = Math.round(acc/tot*W); acc += Math.max(0, +b.w || 0); const x1 = Math.round(acc/tot*W);
+      let [r, g, bl] = hex2rgb(b.c);
+      const l = 0.299*r + 0.587*g + 0.114*bl;
+      r = l + (r - l)*P.sat; g = l + (g - l)*P.sat; bl = l + (bl - l)*P.sat;
+      r = r*P.level + P.lift*255 + P.warm*30; g = g*P.level + P.lift*255 + P.warm*8; bl = bl*P.level + P.lift*255 - P.warm*30;
+      for (let y=y0; y<y1; y++){ const o = y*W; for (let x=x0; x<x1; x++){ R[o+x] = r; G[o+x] = g; B[o+x] = bl; } }
+    });
+  };
+  fillRow(LAY.top, 0, splitY);
+  if (splitY < H) fillRow(LAY.bot, splitY, H);
+  // line markers: a thin dark line with white dashes near the top and bottom edge, as on the feed cards
+  if (P.markers){
+    const th = Math.max(2, Math.round(3*k));
+    for (const fy of [0.043, 0.952]){
+      const y0 = Math.round(H*fy);
+      for (let y=y0; y<y0+th && y<H; y++){
+        const o = y*W;
+        for (let x=0; x<W; x++){
+          const u = x/W, seg = (u*4 + 0.06) % 1, white = seg > 0.08 && seg < 0.2;
+          const v = white ? 225 : 15; R[o+x] = v; G[o+x] = v; B[o+x] = v;
+        }
+      }
+    }
+  }
+  const phase = loopN ? t/loopN : 0, T = loopN ? Math.round(phase*1000) : 0;
+  const cyc = a => Math.sin(phase*Math.PI*2 + a);
+  // 2. line jitter: each line nudged sideways a little, in short drifting groups
+  const Y = new Float32Array(n), U = new Float32Array(n), V = new Float32Array(n);
+  const jit = P.jit*3.2*k, grp = Math.max(1, Math.round(2*k));
+  for (let y=0; y<H; y++){
+    let dx = 0;
+    if (jit > 0){
+      const g = (y/grp)|0;
+      dx = (hash(g, t, 11) - 0.5)*jit + (vn(y/(40*k) + phase*6, 3, 12) - 0.5)*jit*1.6 + cyc(y/(H*0.18))*jit*0.4;
+    }
+    const o = y*W;
+    for (let x=0; x<W; x++){
+      let sx = Math.round(x - dx); sx = sx < 0 ? 0 : (sx >= W ? W-1 : sx);
+      const i = o + sx, r = R[i], g = G[i], b = B[i];
+      const yy = 0.299*r + 0.587*g + 0.114*b;
+      Y[o+x] = yy; U[o+x] = b - yy; V[o+x] = r - yy;
+    }
+  }
+  // 3. bandwidth: soft luma, much softer chroma that trails to the right (bleed)
+  const T1 = new Float32Array(n);
+  const rl = P.soft*3*k; boxH(Y, T1, W, H, rl); boxH(T1, Y, W, H, rl);
+  if (P.ring > 0){
+    boxH(Y, T1, W, H, rl*2 + 2*k);
+    const a = P.ring*0.9; for (let i=0; i<n; i++) Y[i] += (Y[i] - T1[i])*a;
+  }
+  const rc = (1 + P.soft*3 + P.bleed*6)*k;
+  boxH(U, T1, W, H, rc); boxH(T1, U, W, H, rc); boxH(V, T1, W, H, rc); boxH(T1, V, W, H, rc);
+  if (P.bleed > 0){
+    const a = Math.exp(-1/Math.max(0.5, P.bleed*24*k)), lag = Math.round(P.bleed*5*k);
+    for (let y=0; y<H; y++){
+      const o = y*W; let pu = U[o], pv = V[o];
+      for (let x=W-1; x>=lag; x--){ U[o+x] = U[o+x-lag]; V[o+x] = V[o+x-lag]; }
+      for (let x=0; x<W; x++){ pu = U[o+x] + (pu - U[o+x])*a; pv = V[o+x] + (pv - V[o+x])*a; U[o+x] = pu; V[o+x] = pv; }
+    }
+  }
+  boxV(U, T1, W, H, Math.round(0.8*k)); U.set(T1); boxV(V, T1, W, H, Math.round(0.8*k)); V.set(T1);
+  // 4. noise, dropouts, hum bar, interlace, vignette
+  const gr = P.grain*34, cn = P.cnoise*60, cs = Math.max(1, Math.round(1.6*k));
+  const humY = phase*1.0, hum = P.hum;
+  const img = ctx.createImageData(W, H), o4 = img.data;
+  for (let y=0; y<H; y++){
+    const ny = y/H;
+    let hb = 1;
+    if (hum > 0){ let dd = ((ny - humY) % 1 + 1) % 1; dd = Math.min(dd, 1 - dd); hb = 1 - hum*0.22*Math.exp(-dd*dd*40) + hum*0.06*Math.exp(-(dd-0.12)*(dd-0.12)*80); }
+    const il = P.lines && (((y/(2*k))|0) & 1) ? 0.93 : 1;
+    const vy = Math.abs(ny*2 - 1);
+    for (let x=0; x<W; x++){
+      const i = y*W + x, j = i*4;
+      let yy = Y[i], u = U[i], v = V[i];
+      if (gr > 0) yy += (hash(x, y, T + 21) + hash(x, y, T + 22) - 1)*gr;
+      if (cn > 0){
+        const cx = (x/cs)|0, cy = (y/cs)|0;
+        u += (hash(cx, cy, T + 31) - 0.5)*cn; v += (hash(cx, cy, T + 32) - 0.5)*cn;
+      }
+      let f = hb*il;
+      if (P.vig > 0){ const vx = Math.abs(x/W*2 - 1), dd = Math.pow(Math.pow(vx, 6) + Math.pow(vy, 6), 1/6); f *= 1 - P.vig*Math.pow(Math.min(1, dd), 8); }
+      const r = (yy + v)*f, b = (yy + u)*f, g = (yy - 0.509*v - 0.194*u)*f;
+      o4[j] = r; o4[j+1] = g; o4[j+2] = b; o4[j+3] = 255;
+    }
+  }
+  // dropouts: short bright streaks with a fading tail, new ones every frame
+  const nd = Math.round(P.drop*28*(H/491));
+  for (let q=0; q<nd; q++){
+    const y = Math.floor(hash(q, t, 41)*H), x0 = Math.floor(hash(q, t, 42)*W), len = Math.round((8 + hash(q, t, 43)*60)*k), th = Math.max(1, Math.round(k*(hash(q, t, 44) < 0.3 ? 2 : 1)));
+    const br = 0.5 + 0.5*hash(q, t, 45);
+    for (let yy=y; yy<Math.min(H, y+th); yy++) for (let x=x0; x<Math.min(W, x0+len); x++){
+      const a = br*Math.min(1, (x - x0)/(4*k))*(1 - (x - x0)/len*0.7), j = (yy*W + x)*4;
+      o4[j] += (235 - o4[j])*a; o4[j+1] += (240 - o4[j+1])*a; o4[j+2] += (220 - o4[j+2])*a;
+    }
+  }
+  return img;
+}
+
+// ---------- preview ----------
+let FRAME = 0;
+function previewSize(){ const s = SIZES[document.getElementById('size').value]; const w = P.play ? 776 : s[0]; return [w, Math.round(w*s[1]/s[0])]; }
+function render(){
+  const [w, h] = previewSize();
+  if (cv.width !== w || cv.height !== h){ cv.width = w; cv.height = h; }
+  ctx.putImageData(renderCard(w, h, P.play ? FRAME % P.gframes : 0, P.play ? P.gframes : 0), 0, 0);
+}
+let pending = false;
+function queue(){ if (!pending && !P.play){ pending = true; requestAnimationFrame(() => { pending = false; render(); }); } }
+let lastT = 0, raf = 0;
+function loop(ts){ if (!P.play) return; if (ts - lastT >= 1000/P.fps){ lastT = ts; FRAME++; render(); } raf = requestAnimationFrame(loop); }
+function setPlay(on){
+  P.play = on; const b = document.getElementById('play'); b.setAttribute('aria-pressed', on); b.textContent = on ? 'Pause' : 'Play';
+  cancelAnimationFrame(raf); if (on){ lastT = 0; raf = requestAnimationFrame(loop); } else render();
+}
+
+// ---------- layout editor ----------
+function barRow(list, i, side){
+  const b = list[i], row = document.createElement('div'); row.className = 'bar';
+  const col = document.createElement('input'); col.type = 'color'; col.value = b.c; col.setAttribute('aria-label', (side === 'top' ? 'Top' : 'Bottom') + ' bar ' + (i+1) + ' colour');
+  const txt = document.createElement('input'); txt.type = 'text'; txt.value = b.c; txt.spellcheck = false; txt.setAttribute('aria-label', 'Hex value');
+  const wid = document.createElement('input'); wid.type = 'number'; wid.min = '0.1'; wid.step = '0.1'; wid.value = b.w; wid.title = 'Relative width'; wid.setAttribute('aria-label', 'Relative width');
+  const up = document.createElement('button'); up.type = 'button'; up.textContent = '↑'; up.title = 'Move left'; up.setAttribute('aria-label', 'Move left');
+  const del = document.createElement('button'); del.type = 'button'; del.textContent = '×'; del.title = 'Remove'; del.setAttribute('aria-label', 'Remove');
+  col.addEventListener('input', () => { b.c = col.value; txt.value = col.value; paintPreviews(); queue(); });
+  txt.addEventListener('change', () => { let v = txt.value.trim(); if (!v.startsWith('#')) v = '#' + v; if (/^#[0-9a-f]{3}$/i.test(v)) v = '#' + [...v.slice(1)].map(c => c+c).join(''); if (/^#[0-9a-f]{6}$/i.test(v)){ b.c = v.toLowerCase(); col.value = b.c; txt.value = b.c; paintPreviews(); queue(); } else txt.value = b.c; });
+  wid.addEventListener('input', () => { const v = parseFloat(wid.value); if (v > 0){ b.w = v; paintPreviews(); queue(); } });
+  up.addEventListener('click', () => { if (i > 0){ [list[i-1], list[i]] = [list[i], list[i-1]]; buildEditor(); queue(); } });
+  del.addEventListener('click', () => { if (list.length > 1){ list.splice(i, 1); buildEditor(); queue(); } });
+  row.append(col, txt, wid, up, del);
+  return row;
+}
+function paintPreviews(){
+  for (const [id, list] of [['pvTop', LAY.top], ['pvBot', LAY.bot]]){
+    const el = document.getElementById(id); el.innerHTML = '';
+    list.forEach(b => { const s = document.createElement('span'); s.style.flex = b.w; s.style.background = b.c; el.appendChild(s); });
+  }
+}
+function buildEditor(){
+  for (const [id, list, side] of [['barsTop', LAY.top, 'top'], ['barsBot', LAY.bot, 'bot']]){
+    const el = document.getElementById(id); el.innerHTML = '';
+    list.forEach((_, i) => el.appendChild(barRow(list, i, side)));
+  }
+  paintPreviews();
+  setSlider('split', Math.round(LAY.split*100));
+}
+document.querySelectorAll('[data-add]').forEach(b => b.addEventListener('click', () => {
+  const list = b.dataset.add === 'top' ? LAY.top : LAY.bot; list.push({c: list[list.length-1]?.c || '#ffffff', w: 1}); buildEditor(); queue();
+}));
+document.getElementById('dreset').addEventListener('click', () => { LAY = JSON.parse(JSON.stringify(DESIGN)); buildEditor(); document.getElementById('dstate').textContent = 'Loaded: your 776×491 design (8 bars over cyan, magenta, yellow and black).'; queue(); });
+
+// read a flat design image: find the split, then the colour runs in each row
+function readDesign(img){
+  const w = Math.min(1600, img.width), h = Math.round(img.height*w/img.width);
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const x = c.getContext('2d'); x.drawImage(img, 0, 0, w, h);
+  const d = x.getImageData(0, 0, w, h).data;
+  const px = (xx, yy) => { const i = (yy*w + xx)*4; return [d[i], d[i+1], d[i+2]]; };
+  const diff = (a, b) => Math.abs(a[0]-b[0]) + Math.abs(a[1]-b[1]) + Math.abs(a[2]-b[2]);
+  // split: the row where many columns change colour at once
+  let best = -1, bestScore = 0;
+  for (let yy = Math.round(h*0.15); yy < Math.round(h*0.95); yy++){
+    let s = 0; for (let xx = 2; xx < w-2; xx += 3) if (diff(px(xx, yy-2), px(xx, yy+2)) > 60) s++;
+    if (s > bestScore){ bestScore = s; best = yy; }
+  }
+  const hasBottom = bestScore > (w/3)*0.3;
+  const runs = yy => {
+    const out = []; let start = 0, ref = px(Math.min(w-1, 3), yy);
+    const close = (a, b) => diff(a, b) < 40;
+    for (let xx = 1; xx <= w; xx++){
+      const cur = xx < w ? px(xx, yy) : null;
+      if (!cur || !close(cur, ref)){
+        const len = xx - start;
+        if (len > w*0.012){
+          const m = px(Math.round((start + xx)/2), yy);
+          const hx = '#' + m.map(v => v.toString(16).padStart(2, '0')).join('');
+          if (out.length && out[out.length-1].c === hx) out[out.length-1].len += len; else out.push({c: hx, len});
+        }
+        start = xx; if (cur) ref = cur;
+      }
+    }
+    const tot = out.reduce((s, r) => s + r.len, 0);
+    const unit = Math.min(...out.map(r => r.len));
+    return out.map(r => ({c: r.c, w: Math.round(r.len/unit*10)/10}));
+  };
+  const split = hasBottom ? best/h : 1;
+  const top = runs(Math.round((hasBottom ? best : h)*0.5));
+  const bot = hasBottom ? runs(Math.round(best + (h - best)*0.5)) : [{c:'#000000', w:1}];
+  return {split, top, bot, aspect: img.width/img.height};
+}
+document.getElementById('dfile').addEventListener('change', e => {
+  const f = e.target.files[0]; if (!f) return;
+  const fr = new FileReader();
+  fr.onload = () => {
+    const im = new Image();
+    im.onload = () => {
+      try {
+        const lay = readDesign(im);
+        if (!lay.top.length) throw new Error('none');
+        LAY = lay; buildEditor(); queue();
+        document.getElementById('dstate').textContent = 'Read from ' + f.name + ': ' + lay.top.length + ' bars on top' + (lay.split < 1 ? ', ' + lay.bot.length + ' blocks below' : '') + '. Adjust anything below.';
+      } catch(err){ setStatus("Couldn't find bars in that image. Use a flat design with solid colour bars."); }
+    };
+    im.src = fr.result;
+  };
+  fr.readAsDataURL(f);
+});
+
+// ---------- controls ----------
+const pct = v => Math.round(v) + '%';
+const S = {
+  split:{to:v=>v/100, fmt:v=>v>=100?'No bottom row':v+'% top'},
+  level:{to:v=>v/100, fmt:pct}, sat:{to:v=>v/100, fmt:pct}, lift:{to:v=>v/100, fmt:pct}, warm:{to:v=>v/100, fmt:v=>v==0?'Neutral':(v>0?'Warm '+v:'Cool '+(-v))},
+  soft:{to:v=>v/100, fmt:pct}, bleed:{to:v=>v/100, fmt:pct}, ring:{to:v=>v/100, fmt:pct}, jit:{to:v=>v/100, fmt:pct},
+  grain:{to:v=>v/100, fmt:pct}, cnoise:{to:v=>v/100, fmt:pct}, drop:{to:v=>v/100, fmt:pct}, hum:{to:v=>v/100, fmt:pct}, vig:{to:v=>v/100, fmt:pct},
+  fps:{to:v=>+v, fmt:v=>v+' fps'}, gframes:{to:v=>+v, fmt:v=>v+' frames'}
+};
+function setSlider(id, v){
+  const el = document.getElementById(id); el.value = v;
+  const val = S[id].to(+el.value);
+  if (id === 'split') LAY.split = val; else P[id] = val;
+  document.getElementById('o-'+id).textContent = S[id].fmt(+el.value);
+}
+const LOOK_KEYS = ['level','sat','lift','warm','soft','bleed','ring','jit','grain','cnoise','drop','hum','vig'];
+for (const id in S){
+  const el = document.getElementById(id);
+  el.addEventListener('input', () => { setSlider(id, el.value); if (LOOK_KEYS.includes(id)) markLook(null); if (id === 'gframes') updateGifInfo(); queue(); });
+  setSlider(id, el.value);
+}
+const LOOKS = {
+  studio:   {level:100, sat:100, lift:0,  warm:0,  soft:12, bleed:10, ring:0,  jit:0,  grain:4,  cnoise:4,  drop:0,  hum:0,  vig:0,  markers:false, lines:false},
+  broadcast:{level:85,  sat:100, lift:4,  warm:0,  soft:35, bleed:35, ring:20, jit:15, grain:15, cnoise:20, drop:10, hum:10, vig:10, markers:true,  lines:false},
+  vhs:      {level:80,  sat:72,  lift:14, warm:12, soft:65, bleed:85, ring:35, jit:45, grain:35, cnoise:70, drop:40, hum:30, vig:25, markers:false, lines:true}
+};
+function markLook(name){ document.querySelectorAll('[data-look]').forEach(x => x.setAttribute('aria-pressed', x.dataset.look === name)); }
+document.querySelectorAll('[data-look]').forEach(b => b.addEventListener('click', () => {
+  const L = LOOKS[b.dataset.look];
+  for (const k of LOOK_KEYS) setSlider(k, L[k]);
+  P.lines = L.lines; document.getElementById('lines').checked = L.lines;
+  markLook(b.dataset.look); queue();
+}));
+document.getElementById('lines').addEventListener('change', e => { P.lines = e.target.checked; queue(); });
+document.getElementById('size').addEventListener('change', queue);
+document.getElementById('play').addEventListener('click', () => setPlay(!P.play));
+function updateGifInfo(){}
+
+// ---------- files ----------
+function setStatus(t){ document.getElementById('status').textContent = t; }
+let downloads = null;
+(async () => { try { downloads = await window.claude?.use?.('downloads'); } catch(e){ downloads = null; } })();
+async function offer(name, blob){
+  if (downloads){
+    try { await downloads.save({filename:name, data:blob}); setStatus('Saved ' + name); return; }
+    catch(err){ if (err && err.code === 'declined'){ setStatus('Save cancelled.'); return; } }
+  }
+  if (!window.claude){ const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click(); setStatus('Saved ' + name); return; }
+  const img = document.getElementById('saved'); img.src = URL.createObjectURL(blob); img.hidden = false; setStatus('Right-click or long-press the image below to save it.');
+}
+const look = () => document.querySelector('[data-look][aria-pressed=true]')?.dataset.look || 'custom';
+document.getElementById('saveStill').addEventListener('click', () => {
+  const [w, h] = SIZES[document.getElementById('size').value];
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  c.getContext('2d').putImageData(renderCard(w, h, P.play ? FRAME % P.gframes : 0, P.play ? P.gframes : 0), 0, 0);
+  c.toBlob(b => offer('screen-test-' + look() + '-' + w + 'x' + h + '.png', b), 'image/png');
+});
+
+// ---------- GIF encoder (median-cut palette, LZW) ----------
+function buildPalette(frames){
+  const samp = [];
+  for (const f of frames){ const d = f.data; const step = Math.max(4, Math.floor(d.length/4/12000))*4; for (let i=0; i<d.length; i+=step) samp.push([d[i], d[i+1], d[i+2]]); }
+  let boxes = [samp];
+  while (boxes.length < 256){
+    let bi = -1, bestR = -1, bc = 0;
+    boxes.forEach((b, i) => { if (b.length < 2) return; for (let c=0; c<3; c++){ let mn = 255, mx = 0; for (const p of b){ if (p[c] < mn) mn = p[c]; if (p[c] > mx) mx = p[c]; } if (mx - mn > bestR){ bestR = mx - mn; bi = i; bc = c; } } });
+    if (bi < 0 || bestR < 2) break;
+    const b = boxes[bi].sort((p, q) => p[bc] - q[bc]), m = b.length >> 1;
+    boxes.splice(bi, 1, b.slice(0, m), b.slice(m));
+  }
+  const pal = boxes.map(b => { const s = [0,0,0]; for (const p of b){ s[0] += p[0]; s[1] += p[1]; s[2] += p[2]; } return s.map(v => Math.round(v/b.length)); });
+  while (pal.length < 256) pal.push([0,0,0]);
+  return pal;
+}
+function gifBytes(frames, w, h, delayCs){
+  const pal = buildPalette(frames), cache = new Int16Array(32768).fill(-1);
+  const nearest = (r, g, b) => {
+    const key = (r>>3)<<10 | (g>>3)<<5 | (b>>3);
+    if (cache[key] >= 0) return cache[key];
+    let bi = 0, bd = 1e9;
+    for (let i=0; i<256; i++){ const p = pal[i], dr = p[0]-r, dg = p[1]-g, db = p[2]-b, dd = dr*dr*2 + dg*dg*3 + db*db; if (dd < bd){ bd = dd; bi = i; } }
+    return cache[key] = bi;
+  };
+  const out = []; const push = (...a) => { for (const v of a) out.push(v); }; const word = v => push(v & 255, v >> 8 & 255);
+  push(...[...'GIF89a'].map(c => c.charCodeAt(0))); word(w); word(h); push(0xF7, 0, 0);
+  for (const p of pal) push(p[0], p[1], p[2]);
+  push(0x21, 0xFF, 0x0B, ...[...'NETSCAPE2.0'].map(c => c.charCodeAt(0)), 3, 1, 0, 0, 0);
+  const child = new Int32Array(4096*256);
+  for (const f of frames){
+    push(0x21, 0xF9, 4, 0x04); word(delayCs); push(0, 0);
+    push(0x2C); word(0); word(0); word(w); word(h); push(0);
+    const d = f.data, n = w*h, idx = new Uint8Array(n);
+    for (let i=0, j=0; i<n; i++, j+=4) idx[i] = nearest(d[j], d[j+1], d[j+2]);
+    // LZW
+    push(8);
+    const bytes = []; let cur = 0, bits = 0;
+    const emit = (code, size) => { cur |= code << bits; bits += size; while (bits >= 8){ bytes.push(cur & 255); cur >>>= 8; bits -= 8; } };
+    const CLEAR = 256, EOI = 257;
+    let size = 9, next = 258; child.fill(0);
+    emit(CLEAR, size);
+    let prefix = idx[0];
+    const out1 = code => { emit(code, size); if (next > (1 << size) - 1 && size < 12) size++; };
+    for (let i=1; i<n; i++){
+      const k = idx[i], key = prefix*256 + k, c = child[key];
+      if (c){ prefix = c - 1; continue; }
+      out1(prefix);
+      if (next < 4096){ child[key] = next + 1; next++; }
+      else { emit(CLEAR, size); child.fill(0); size = 9; next = 258; }
+      prefix = k;
+    }
+    out1(prefix);
+    emit(EOI, size);
+    if (bits > 0) bytes.push(cur & 255);
+    for (let i=0; i<bytes.length; i+=255){ const chunk = bytes.slice(i, i+255); push(chunk.length, ...chunk); }
+    push(0);
+  }
+  push(0x3B);
+  return new Uint8Array(out);
+}
+document.getElementById('saveGif').addEventListener('click', async e => {
+  const btn = e.currentTarget; btn.disabled = true;
+  const s = SIZES[document.getElementById('size').value], w = +document.getElementById('gsize').value, h = Math.round(w*s[1]/s[0]);
+  const N = P.gframes, frames = [];
+  for (let f=0; f<N; f++){ setStatus('Rendering frame ' + (f+1) + ' of ' + N + '…'); await new Promise(r => setTimeout(r, 0)); frames.push(renderCard(w, h, f, N)); }
+  setStatus('Encoding GIF…'); await new Promise(r => setTimeout(r, 0));
+  const bytes = gifBytes(frames, w, h, Math.max(2, Math.round(100/P.fps)));
+  btn.disabled = false;
+  setStatus('GIF ready: ' + (bytes.length/1048576).toFixed(1) + ' MB.');
+  offer('screen-test-' + look() + '-' + w + 'x' + h + '.gif', new Blob([bytes], {type:'image/gif'}));
+});
+
+buildEditor(); render();
+</script>
