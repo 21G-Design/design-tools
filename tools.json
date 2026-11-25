@@ -18,6 +18,13 @@
     "folder": "static-type-generator",
     "description": "Create test card type with static.",
     "author": "Tim Fletcher",
-    "tags": ["image"]
+    "tags": ["type"]
+  },
+     {
+    "name": "Immunity Network - Logo Animator",
+    "folder": "immunity-network",
+    "description": "Generative logo animator.",
+    "author": "Tim Fletcher",
+    "tags": ["logo"]
   }
 ]
