@@ -12,5 +12,12 @@
     "description": "Create a screen test card with custom colour palette.",
     "author": "Tim Fletcher",
     "tags": ["image"]
+  },
+   {
+    "name": "Static Type Generator",
+    "folder": "static-type-generator",
+    "description": "Create test card type with static.",
+    "author": "Tim Fletcher",
+    "tags": ["image"]
   }
 ]
