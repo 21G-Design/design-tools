@@ -5,5 +5,12 @@
     "description": "Apply static to an image and subject.",
     "author": "Tim Fletcher",
     "tags": ["image"]
+  },
+  {
+    "name": "Screen Test Generator",
+    "folder": "screen-test-generator",
+    "description": "Create a screen test card with custom colour palette.",
+    "author": "Tim Fletcher",
+    "tags": ["image"]
   }
 ]
