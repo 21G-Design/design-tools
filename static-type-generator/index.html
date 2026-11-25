@@ -1,0 +1,732 @@
+<title>Screen Text</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;700&family=Martian+Mono:wght@300;400;500&display=swap">
+<style>
+/* Layout: same rack as SIGNAL LOST - monitor left (sticky), control strips right; one column on phones.
+   Single dark look by choice: the frame is judged against a dark surround. */
+:root{
+  --bg:#0c0e14;
+  --panel:#13161f;
+  --line:#242a3a;
+  --fg:#dfe3ee;
+  --muted:#7d859c;
+  --accent:#7d97ff;
+  --accent-ink:#0c0e14;
+  --dot-off:#1b2030;
+  --display:"Familjen Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --mono:"Martian Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:12px;font-weight:300}
+.wrap{min-height:100%;box-sizing:border-box;display:flex;flex-direction:column;gap:14px;
+  padding-block:16px;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+header{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+h1{font-family:var(--display);font-weight:700;font-size:22px;letter-spacing:-.01em;margin:0}
+header p{margin:0;color:var(--muted);font-size:11px}
+.main{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:16px;align-items:start;flex:1}
+@media (max-width:820px){.main{grid-template-columns:minmax(0,1fr)} .monitor canvas{max-height:42vh}}
+.monitor{position:sticky;top:calc(env(safe-area-inset-top, 0px) + 12px);z-index:2;background:#000;border:1px solid var(--line);border-radius:6px;overflow:hidden;
+  display:flex;align-items:center;justify-content:center;min-width:0}
+.monitor canvas{display:block;width:100%;max-height:calc(100vh - 40px);height:auto;object-fit:contain;
+  background:repeating-conic-gradient(#1a1d26 0 25%, #12141b 0 50%) 0 0/16px 16px}
+.rack{display:flex;flex-direction:column;gap:10px;min-width:0}
+.strip{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px;display:flex;flex-direction:column;gap:11px}
+.strip h2{margin:0;font-family:var(--display);font-weight:500;font-size:13px;letter-spacing:.02em;display:flex;justify-content:space-between;align-items:baseline}
+.strip h2 small{font-family:var(--mono);font-size:9.5px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;font-weight:300}
+.ctl{display:flex;flex-direction:column;gap:5px}
+.ctl .row{display:flex;justify-content:space-between;gap:8px}
+.ctl output{color:var(--muted);font-variant-numeric:tabular-nums}
+.hint{color:var(--muted);font-size:10px;line-height:1.5;margin:0}
+input[type=range]{width:100%;accent-color:var(--accent);margin:0;height:18px}
+input[type=text]{font:inherit;font-size:14px;font-weight:400;letter-spacing:.06em;text-transform:uppercase;color:var(--fg);background:#0c0e14;border:1px solid var(--line);border-radius:4px;padding:8px 9px;width:100%;box-sizing:border-box}
+select{font:inherit;font-size:11px;color:var(--fg);background:#1b2030;border:1px solid var(--line);border-radius:4px;padding:7px 8px;width:100%}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--line);border-radius:4px;overflow:hidden}
+.seg.two{grid-template-columns:1fr 1fr}
+.seg button{border:0;border-right:1px solid var(--line);background:transparent;border-radius:0}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed=true],.toggleBtn[aria-pressed=true]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+button,.filebtn{font:inherit;font-size:11px;color:var(--fg);background:#1b2030;border:1px solid var(--line);border-radius:4px;padding:7px 9px;cursor:pointer;text-align:center;position:relative}
+button:hover,.filebtn:hover{border-color:var(--accent)}
+button:focus-visible,.filebtn:focus-within,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:500}
+.btns{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.filebtn input{position:absolute;opacity:0;width:1px;height:1px}
+.subhead{font-size:9.5px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin:4px 0 -4px}
+.lines{display:flex;flex-direction:column;gap:5px}
+.toggle{display:flex;align-items:center;gap:8px;cursor:pointer}
+.toggle input{accent-color:var(--accent);margin:0}
+.status{min-height:14px;color:var(--muted);font-size:10px;margin:0}
+/* glyph editor */
+.glyphbar{display:flex;gap:6px;align-items:center}
+.glyphbar select{flex:1}
+.glyphGrid{display:grid;gap:2px;background:#07080c;padding:6px;border-radius:4px;border:1px solid var(--line);touch-action:none;user-select:none}
+.glyphGrid button{aspect-ratio:var(--ar, 3/4);padding:0;border:0;border-radius:1px;background:var(--dot-off)}
+.glyphGrid button.on{background:#e8e8e8}
+.glyphGrid button:hover{outline:1px solid var(--accent)}
+.charset{display:flex;flex-wrap:wrap;gap:3px}
+.charset button{min-width:24px;padding:4px 5px;font-size:11px}
+.charset button.edited{border-color:var(--accent)}
+.charset button[aria-pressed=true]{background:var(--accent);color:var(--accent-ink)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Screen Text</h1>
+    <p>Caption-generator lettering, white on black, softened like it came off tape.</p>
+  </header>
+  <div class="main">
+    <div class="monitor" id="monitor">
+      <canvas id="cv" width="1920" height="120" aria-label="Rendered test card frame"></canvas>
+    </div>
+
+    <div class="rack">
+      <section class="strip">
+        <h2>Text <small>caption</small></h2>
+        <div class="ctl"><label>Font</label>
+          <div class="seg" role="group" aria-label="Font">
+            <button type="button" data-font="01" aria-pressed="true">Type 01</button>
+            <button type="button" data-font="02" aria-pressed="false">Type 02</button>
+            <button type="button" data-font="03" aria-pressed="false">Type 03</button>
+          </div>
+        </div>
+        <div class="lines">
+          <input id="txt" class="line" type="text" value="BBC UKI-825" maxlength="40" spellcheck="false" aria-label="Line 1">
+          <input id="txt2" class="line" type="text" value="NOTTINGHAM" maxlength="40" spellcheck="false" aria-label="Line 2">
+          <input id="txt3" class="line" type="text" value="" maxlength="40" spellcheck="false" aria-label="Line 3" placeholder="Line 3">
+          <input id="txt4" class="line" type="text" value="" maxlength="40" spellcheck="false" aria-label="Line 4" placeholder="Line 4">
+        </div>
+        <div class="ctl"><label>Frame</label>
+          <div class="seg two" role="group" aria-label="Frame">
+            <button type="button" data-frame="mpu" aria-pressed="true">MPU 300×250</button>
+            <button type="button" data-frame="strip" aria-pressed="false">Strip</button>
+          </div>
+        </div>
+        <label class="toggle"><input id="fit" type="checkbox" checked> Fit text to frame</label>
+        <div class="ctl"><div class="row"><label for="size">Text size</label><output id="o-size"></output></div><input id="size" type="range" min="20" max="250" value="100"></div>
+        <div class="ctl"><div class="row"><label for="lead">Line spacing</label><output id="o-lead"></output></div><input id="lead" type="range" min="0" max="150" value="35"></div>
+        <div class="ctl"><div class="row"><label for="weight">Weight</label><output id="o-weight"></output></div><input id="weight" type="range" min="0" max="100" value="0"></div>
+        <div class="ctl"><div class="row"><label for="track">Text tracking</label><output id="o-track"></output></div><input id="track" type="range" min="0" max="60" step="1" value="14"></div>
+        <div class="ctl"><div class="row"><label for="gap">Dot gap</label><output id="o-gap"></output></div><input id="gap" type="range" min="0" max="60" value="0"></div>
+        <label class="toggle"><input id="prop" type="checkbox"> Proportional spacing</label>
+        <div class="ctl"><div class="row"><label for="kern">Kerning</label><output id="o-kern"></output></div><input id="kern" type="range" min="0" max="100" value="70"></div>
+        <label class="toggle"><input id="scan" type="checkbox"> Scanlines</label>
+        <p class="hint">Tracking is the space between characters, in dots. Each font starts at the spacing measured from its frames. Proportional spacing gives each letter only the width it needs and kerns awkward pairs like LT, TA and AV; switch it off for the strict generator grid. Weight thickens the upright strokes without touching the horizontal lines. Dot gap separates the dots for an LED matrix look. Scanlines splits each row of dots into slabs with thin black gaps, as in the Type 03 reference; it works on every font.</p>
+      </section>
+
+      <section class="strip">
+        <h2>Video <small>signal look</small></h2>
+        <div class="ctl"><div class="row"><label for="soft">Softness</label><output id="o-soft"></output></div><input id="soft" type="range" min="0" max="100" value="45"></div>
+        <div class="ctl"><div class="row"><label for="fringe">Edge colour</label><output id="o-fringe"></output></div><input id="fringe" type="range" min="0" max="100" value="50"></div>
+        <div class="ctl"><div class="row"><label for="cnoise">Colour noise</label><output id="o-cnoise"></output></div><input id="cnoise" type="range" min="0" max="100" value="60"></div>
+        <div class="ctl"><div class="row"><label for="noise">Grain</label><output id="o-noise"></output></div><input id="noise" type="range" min="0" max="100" value="12"></div>
+        <div class="ctl"><div class="row"><label for="ring">Edge ringing</label><output id="o-ring"></output></div><input id="ring" type="range" min="0" max="100" value="0"></div>
+        <label class="toggle"><input id="lines" type="checkbox"> Interlace lines</label>
+        <p class="hint">Edge colour is the cross-colour on stroke edges: lavender and blue where a stroke starts, yellow-green where it ends. Colour noise is the soft pink and green tinting inside the white strokes.</p>
+        <div class="seg" role="group" aria-label="Signal presets">
+          <button type="button" data-look="clean" aria-pressed="false">Clean</button>
+          <button type="button" data-look="broadcast" aria-pressed="true">Broadcast</button>
+          <button type="button" data-look="tape">Tape</button>
+        </div>
+      </section>
+
+      <section class="strip">
+        <h2>Static <small>and CRT</small></h2>
+        <div class="seg" role="group" aria-label="Static presets">
+          <button type="button" data-st="off" aria-pressed="false">Off</button>
+          <button type="button" data-st="light" aria-pressed="true">Light</button>
+          <button type="button" data-st="heavy" aria-pressed="false">Heavy</button>
+        </div>
+        <p class="subhead">Static</p>
+        <div class="ctl"><div class="row"><label for="stat">Streaks</label><output id="o-stat"></output></div><input id="stat" type="range" min="0" max="100" value="25"></div>
+        <div class="ctl"><div class="row"><label for="smear">Smear</label><output id="o-smear"></output></div><input id="smear" type="range" min="0" max="100" value="35"></div>
+        <div class="ctl"><div class="row"><label for="spread">Streak spread</label><output id="o-spread"></output></div><input id="spread" type="range" min="0" max="100" value="35"></div>
+        <div class="ctl"><div class="row"><label for="sgrain">Grain size</label><output id="o-sgrain"></output></div><input id="sgrain" type="range" min="1" max="6" step="0.5" value="2"></div>
+        <div class="ctl"><div class="row"><label for="brk">Text breakup</label><output id="o-brk"></output></div><input id="brk" type="range" min="0" max="100" value="20"></div>
+        <div class="ctl"><div class="row"><label for="ilines">Interference lines</label><output id="o-ilines"></output></div><input id="ilines" type="range" min="0" max="100" value="15"></div>
+        <p class="subhead">Signal</p>
+        <div class="ctl"><div class="row"><label for="tear">Tearing</label><output id="o-tear"></output></div><input id="tear" type="range" min="0" max="100" value="15"></div>
+        <div class="ctl"><div class="row"><label for="wave">Wave</label><output id="o-wave"></output></div><input id="wave" type="range" min="0" max="100" value="10"></div>
+        <p class="subhead">CRT</p>
+        <div class="ctl"><div class="row"><label for="sline">Scanlines</label><output id="o-sline"></output></div><input id="sline" type="range" min="0" max="100" value="30"></div>
+        <div class="ctl"><div class="row"><label for="roll">Rolling bar</label><output id="o-roll"></output></div><input id="roll" type="range" min="0" max="100" value="25"></div>
+        <div class="ctl"><div class="row"><label for="flick">Flicker</label><output id="o-flick"></output></div><input id="flick" type="range" min="0" max="100" value="20"></div>
+        <div class="ctl"><div class="row"><label for="vig">Vignette</label><output id="o-vig"></output></div><input id="vig" type="range" min="0" max="100" value="40"></div>
+        <p class="subhead">Animation</p>
+        <div class="ctl"><div class="row"><label for="fps">Speed</label><output id="o-fps"></output></div><input id="fps" type="range" min="4" max="30" value="12"></div>
+        <div class="btns">
+          <button id="play" class="toggleBtn" type="button" aria-pressed="false">Play</button>
+          <button id="rec" type="button">Record 4 s clip</button>
+        </div>
+        <p class="hint">Static only lives on and around the lettering: streaks run along the text rows and thin out with distance, smear drags the letters into fading trails, and the black stays black. It is mixed in before the video look, so it softens and fringes like the text. Tearing slides bands of the text sideways; breakup eats dashes out of the letters. Playback renders at half size to keep it smooth; Save PNG always renders full size. The clip is saved as a WebM video.</p>
+      </section>
+
+      <section class="strip">
+        <h2>Font <small>glyph editor</small></h2>
+        <div class="charset" id="charset" role="group" aria-label="Characters"></div>
+        <div class="glyphGrid" id="glyphGrid" aria-label="Dot grid for the selected character"></div>
+        <div class="btns">
+          <button id="gReset" type="button">Reset this character</button>
+          <button id="gResetAll" type="button">Reset whole font</button>
+          <button id="gExport" type="button">Export font</button>
+          <label class="filebtn">Import font<input id="gImport" type="file" accept="application/json,.json"></label>
+        </div>
+        <p class="hint" id="gHint">Click or drag across the dots to switch them on and off. Edited characters are outlined; your edits stay in this browser.</p>
+      </section>
+
+      <section class="strip">
+        <h2>Output</h2>
+        <div class="btns">
+          <button id="saveFrame" class="primary" type="button">Save PNG</button>
+          <button id="saveBand" type="button">Save text on transparent</button>
+        </div>
+        <p class="hint">MPU saves at 1200×1000 (300×250 at 4×). Strip sizes itself to the text: 100 pixels of black around it, at least 1920 wide. Text is centred both ways; empty lines at the end are ignored.</p>
+        <p class="status" id="status"></p>
+        <img id="saved" alt="Rendered PNG; right-click or long-press to save" hidden style="max-width:100%;border:1px solid var(--line);border-radius:4px">
+      </section>
+    </div>
+  </div>
+</div>
+
+<script>
+const FONTS = {'01': {"name": "Screen Type 01", "w": 10, "h": 9, "glyphs": {"A": "...####.....##..##...##....##.##......##############......####......####......####......##", "B": "########..##.....##.##......####.....##.########..##.....##.##......####.....##.########..", "C": "..######...##....##.##......####........##........##........##......##.##....##...######..", "D": "#######...##....##..##.....##.##......####......####......####.....##.##....##..#######...", "E": "############........##........##........########..##........##........##........##########", "F": "############........##........##........########..##........##........##........##........", "G": "..######...##....##.##......####........##........##....######......##.##.....##..#######.", "H": "##......####......####......####......##############......####......####......####......##", "I": ".########.....##........##........##........##........##........##........##.....########.", "J": "...#######.......##........##........##........##........##.##.....##..##...##....#####...", "K": "##......####.....##.##....##..##..##....####......##..##....##....##..##.....##.##......##", "L": "##........##........##........##........##........##........##........##........##########", "M": "###....#######..######.####.####..##..####......####......####......####......####......##", "N": "##......#####.....######....####.##...####..##..####...##.####....######.....#####......##", "O": "..######...##....##.##......####......####......####......####......##.##....##...######..", "P": "########..##.....##.##......####.....##.########..##........##........##........##........", "Q": "..######...##....##.##......####......####......####...##.####....###..##....##...#####.##", "R": "########..##.....##.##......####.....##.########..##...##...##....##..##.....##.##......##", "S": "..######...##....##.##......##.##.........######.........##.##......##.##....##...######..", "T": "##########....##........##........##........##........##........##........##........##....", "U": "##......####......####......####......####......####......####......##.##....##...######..", "V": "##......####......####......##.##....##..##....##...##..##....##..##.....####.......##....", "W": "##......####......####......####......####..##..####..##..####.####.##.###..###..##....##.", "X": "##......##.##....##...##..##.....####.......##.......####.....##..##...##....##.##......##", "Y": "##......##.##....##...##..##.....####.......##........##........##........##........##....", "Z": "##########.......##.......##.......##.......##.......##.......##.......##.......##########", "0": "..#####....##...##..##....###.##...####.##..##.##.####...##.###....##..##...##....#####...", "1": "...##......####........##........##........##........##........##........##......######...", "2": "..#####....##...##..##.....##........##.......##......###.....###......##.......#########.", "3": "..#####....##...##.........##.......##.....####.........##.........##..##...##....#####...", "4": ".....##.......###......####.....##.##....##..##...#########......##........##........##...", "5": "########..##........##........#######...##....##.........##........##.##....##...######...", "6": "...####.....##.......##.......##........#######...##....##..##.....##..##...##....#####...", "7": "#########........##.......##.......##.......##........##.......##........##........##.....", "8": "..#####....##...##..##.....##..##...##...#######...##...##..##.....##..##...##....#####...", "9": "..#####....##...##..##.....##..##....##...#######........##.......##.......##.....###.....", " ": "..........................................................................................", ".": "..........................................................................##........##....", ",": "................................................................##........##.......##.....", ":": "........................##........##............................##........##..............", ";": "........................##........##............................##........##.......##.....", "-": ".........................................#######..........................................", "_": "................................................................................##########", "=": "...............................########............########...............................", "+": "..............##........##........##.....########.....##........##........##..............", "'": "....##........##.......##.................................................................", "\"": "..##..##....##..##....##..##..............................................................", "!": "....##........##........##........##........##........##............................##....", "?": "..######...##....##.##......##.......##......##.......##........##..................##....", "/": "........##.......##.......##.......##.......##.......##.......##.......##.......##........", "(": ".....##.......##.......##........##........##........##........##.........##.........##...", ")": "...##.........##.........##........##........##........##........##.......##.......##.....", "&": "..####.....##..##....##..##.....####.....###...##.##.##.##..##..###....##..###....###..###", "#": "..##..##....##..##..##########..##..##....##..##....##..##..##########..##..##....##..##..", "*": "..............##....##..##..##..######.....####.....######..##..##..##....##..............", "%": "###.....###.#....##.###...##.......##.......##.......##.......##...###.##....#.###.....###", "@": "..######...##....##.##......####..########.##..#####..########.........##.........#######."}, "cw": 2.8, "rh": 4, "track": 1.4, "scan": {"lines": 2, "gap": 0.3}}, '02': {"name": "Screen Type 02", "w": 8, "h": 18, "cw": 7.1, "rh": 2, "track": 1.2, "glyphs": {"A": "...#.......#......###.....###....##.##...##.##..##...##.##...##.##...##.##...##.#######.#######.##...##.##...##.##...##.##...##.##...##.##...##.", "B": "#####...######...##.###..##..##..##..##..##..##..##..##..##.##...#####...#####...##.##...##..##..##..##..##..##..##..##..##.##..######..#####...", "C": "...##.....####...##..##..##..##.##....#.##....#.##......##......##......##......##......##......##....#.##....#..##..##..##..##...####.....##...", "D": "####....#####....##.##...##..##..##..##..##..##..##..##..##..##..##..##..##..##..##..##..##..##..##..##..##..##..##..##..##.##..#####...####....", "E": "#######.#######..##...#..##...#..##......##......##......##.#....####....####....##.#....##......##......##......##...#..##...#.#######.#######.", "F": "#######.#######..##...#..##...#..##......##......##......##.#....####....####....##.#....##......##......##......##......##.....####....####....", "G": "...##.....####...##..##..##..##.##....#.##....#.##......##......##......##......##......##.####.##...##.##...##.##...##.##...##..##.###...##.##.", "H": "##...##.##...##.##...##.##...##.##...##.##...##.##...##.##...##.#######.#######.##...##.##...##.##...##.##...##.##...##.##...##.##...##.##...##.", "I": "####....####.....##......##......##......##......##......##......##......##......##......##......##......##......##......##.....####....####....", "J": "...####....####.....##......##......##......##......##......##......##......##......##......##......##..##..##..##..##..##..##...####.....##....", "K": "###..##.###..##..##..##..##..##..##.##...##.##...##.##...##.##...####....####....##.##...##.##...##.##...##.##...##..##..##..##.###..##.###..##.", "L": "####....####.....##......##......##......##......##......##......##......##......##......##......##......##...#..##...#..##..##.#######.#######.", "M": "##....####....#####..######..#############.##.####.##.####.##.####....####....####....####....####....####....####....####....####....####....##", "N": "##...##.##...##.##...##.##...##.###..##.###..##.####.##.####.##.#######.#######.##.####.##.####.##..###.##..###.##...##.##...##.##...##.##...##.", "O": "...#......###....##.##..##...##.##...##.##...##.##...##.##...##.##...##.##...##.##...##.##...##.##...##.##...##.##...##..##.##....###......#....", "P": "#####...######...##.###..##..##..##..##..##..##..##..##..##.##...#####...####....##......##......##......##......##......##.....####....####....", "Q": "...#......###....##.##..##...##.##...##.##...##.##...##.##...##.##...##.##...##.##...##.##.#.##.##.#.##.##.#.##.##.###...####.......##.......##.", "R": "#####...######...##..##..##..##..##..##..##..##..##..##..##..##..#####...##.##...##.##...##..##..##..##..##..##..##..##..##..##.###..##.###..##.", "S": "..###....#####..##...##.##...##.##...##.##...##.##.......##.......##.......##.......##.......##.##...##.##...##.##...##.##...##..#####....###...", "T": "##################.##.###..##..##..##..#...##......##......##......##......##......##......##......##......##......##......##.....####....####..", "U": "##...##.##...##.##...##.##...##.##...##.##...##.##...##.##...##.##...##.##...##.##...##.##...##.##...##.##...##.##...##.###.###..#####....###...", "V": "##...##.##...##.##...##.##...##.##...##.##...##.##...##.##...##.##...##.##...##.##...##.##...##.##...##.##...##..##.##...#####....###......#....", "W": "##....####....####....####....####....####....####....####....####.##.####.##.####.##.####.##.####.##.##########.##..##..##..##...#..#....#..#..", "X": "##...##.##...##.##...##.##...##..##.##...##.##...##.##....###.....###.....###.....###....##.##...##.##...##.##..##...##.##...##.##...##.##...##.", "Y": "##...##.##...##.##...##.##...##.##...##..##.##...##.##...##.##....###.....###.....###.....###.....###.....###.....###.....###....#####...#####..", "Z": "#######.#######.##...##.#....##.....##......##.....##......##.....##......##.....##......##.....##......##......##....#.##...##.#######.#######.", "0": "..###....#####..##...##.##...##.##...##.##...##.##...##.##...##.##...##.##...##.##...##.##...##.##...##.##...##.##...##.##...##..#####....###...", "1": "...##.....###....####......##......##......##......##......##......##......##......##......##......##......##......##......##....######..######.", "2": "..###....#####..##...##.##...##.##...##.##...##......##.....##.....##.....##.....##.....##......##......##......##....#.##...##.#######.#######.", "3": "..###....#####..##...##.##...##......##......##......##.....##....###.....###.......##.......##......##......##.##...##.##...##..#####....###...", "4": "....##......##.....###.....###....####....####...##.##...##.##..##..##..##..##..#######.#######.....##......##......##......##.....####....####.", "5": "#######.#######.##......##......##......##......##......#####...######.......##......##......##......##......##.##...##.##...##..#####....###...", "6": "...###....####...##......##.....##......##......##......##......#####...######..##...##.##...##.##...##.##...##.##...##.##...##..#####....###...", "9": "..###....#####..##...##.##...##.##...##.##...##.##...##.##...##..######...#####......##......##......##......##.....##......##...####....###....", "7": "#######.#######.##...##.#....##......##.....##......##.....##......##......##.....##......##......##......##......##......##......##......##....", "8": "..###....#####..##...##.##...##.##...##.##...##.##...##..##.##....###.....###....##.##..##...##.##...##.##...##.##...##.##...##..#####....###...", " ": "................................................................................................................................................", "-": ".................................................................######..######.................................................................", "_": "................................................................................................................................################", "=": ".........................................######..######..........................######..######.................................................", "+": "...........................##......##......##......##......##....######..######....##......##......##......##......##...........................", ".": "..................................................................................................................###.....###.....###...........", ",": "..........................................................................................................###.....###.....###......#......#.....", ":": "..........................###.....###.....###.....................................................###.....###.....###...........................", ";": "..........................###.....###.....###.....................................................###.....###.....###......#......#.............", "'": "..###.....###.....###......#......#.............................................................................................................", "\"": ".##.##...##.##...##.##...##.##..................................................................................................................", "!": "..###.....###.....###.....###.....###.....###.....###.....###.....###.....###.....###.....###.....................###.....###.....###...........", "?": "..###....#####..##...##.##...##.##...##......##.....##.....##.....##......##......##......##......##......................##......##......##....", "/": "......##......##.....##......##......##.....##......##......##.....##......##.....##......##......##.....##......##......##.....##......##......", "(": "....##.....##.....##......##.....##......##......##......##......##......##......##......##......##......##.......##......##.......##.......##..", ")": ".##.......##.......##......##.......##......##......##......##......##......##......##......##......##......##.....##......##.....##.....##.....", "&": "..###....##.##...##.##...##.##....###.....###....##.##..##..##.###...##.##...##.##....#.##...#####...##.##...##.##...###.#####.#..###..#........", "#": ".................##.##...##.##...##.##..#######.#######..##.##...##.##...##.##..#######.#######..##.##...##.##...##.##..........................", "*": "........................#..##..##..##..#.######..######.################.######..######.#..##..##..##..#........................................", "%": "##....#.##....#.##...##.##...##......##......##.....##......##.....##......##.....##......##.....##......##.....##...##.##...##.#....##.#....##.", "@": "..###....#####..##...##.##...##.##.####.##.####.##.#.##.##.#.##.##.#.##.##.#.##.##.#.##.##.#.##.##.####.##.####.##......##.......######...#####."}, "scan": {"lines": 0.5, "gap": 0.3}}, '03': {"name": "Screen Type 03", "w": 5, "h": 9, "cw": 4.4, "rh": 4.4, "track": 1.2, "scan": {"lines": 2, "gap": 0.24}, "glyphs": {"A": "..#...#.#.#...##...##...#######...##...##...#", "B": "####.#...##...##...#####.#...##...##...#####.", "C": ".###.#...##....#....#....#....#....#...#.###.", "D": "####.#...##...##...##...##...##...##...#####.", "E": "######....#....#....####.#....#....#....#####", "F": "######....#....#....####.#....#....#....#....", "G": ".###.#...##....#....#.####...##...##...#.###.", "H": "#...##...##...##...#######...##...##...##...#", "I": ".###...#....#....#....#....#....#....#...###.", "J": "..###...#....#....#....#....#.#..#.#..#..##..", "K": "#...##..#.#.#..##...##...#.#..#..#.#...##...#", "L": "#....#....#....#....#....#....#....#....#####", "M": "#...###.###.#.##.#.##...##...##...##...##...#", "N": "#...##...###..##.#.##.#.##..###...##...##...#", "O": ".###.#...##...##...##...##...##...##...#.###.", "P": "####.#...##...##...#####.#....#....#....#....", "Q": ".###.#...##...##...##...##...##.#.##..#..##.#", "R": "####.#...##...##...#####.#.#..#..#.#...##...#", "S": ".###.#...##....#.....###.....#....##...#.###.", "T": "#####..#....#....#....#....#....#....#....#..", "U": "#...##...##...##...##...##...##...##...#.###.", "V": "#...##...##...##...##...##...#.#.#..#.#...#..", "W": "#...##...##...##...##...##.#.##.#.###.###...#", "X": "#...##...#.#.#...#....#....#...#.#.#...##...#", "Y": "#...##...#.#.#...#....#....#....#....#....#..", "Z": "#####....#...#...#....#...#...#....#....#####", "0": ".###.#...##...##...##..###.#.###..##...#.###.", "1": "..#...##..#.#....#....#....#....#....#..#####", "2": ".###.#...#....#....#...#...#...#...#....#####", "3": ".###.#...#....#....#..##.....#....##...#.###.", "4": "#....#..#.#..#.#..#.#####...#....#....#....#.", "5": "######....#....####.....#....#....##...#.###.", "6": ".###.#....#....#....####.#...##...##...#.###.", "7": "#####....#...#....#...#....#...#....#....#...", "8": ".###.#...##...##...#.###.#...##...##...#.###.", "9": ".###.#...##...##...#.####....#....#....#.###.", " ": ".............................................", "-": ".....................###.....................", "_": "........................................#####", "=": "...............#####.....#####...............", "+": "............#....#..#####..#....#............", ".": "..........................................#..", ",": ".....................................#...#...", ":": "............#...................#............", ";": "............#...................#...#........", "'": "..#....#...#.................................", "\"": ".#.#..#.#....................................", "!": "..#....#....#....#....#....#..............#..", "?": ".###.#...#....#...#...#....#..............#..", "/": "....#....#...#....#...#...#....#...#....#....", "(": "..#...#....#...#....#....#.....#....#.....#..", ")": "#.....#....#.....#....#....#...#....#...#....", "<": "........#...#...#...#.....#.....#.....#......", ">": "......#.....#.....#.....#...#...#...#........", "&": ".##..#..#.#..#..##...#...#.#.##..#.#..#..##.#", "#": "......#.#..#.#.#####.#.#.#####.#.#..#.#......", "*": "..........#.#.#.###.#####.###.#.#.#..........", "%": "##..###..#...#...#....#...#...#....#..###..##", "@": ".###.#...##.####.#.##.#.##.####....#...#.###.", "Ø": ".###.#...##...##...##..###.#.###..##...#.###."}}};
+let fontId = '01', FONT_DEFAULT = FONTS['01'];
+// lines = stripes per dot row (0.5 = one stripe every two rows), gap = share of each stripe left black
+const DEFAULT_SCAN = {'01':{lines:2, gap:0.3}, '02':{lines:0.5, gap:0.3}, '03':{lines:2, gap:0.24}};
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d', {willReadFrequently:true});
+let RS = 1, TF = 0; let FW = 1200, FH = 1000; const K = 1080/576, PAD = 100;   // MPU is exported at 4x (1200x1000)     // reference frames are 1024x576; dots scaled for a 1080p frame
+const P = {smear:.35, spread:.35, stat:.25, sgrain:2, brk:.2, ilines:.15, tear:.15, wave:.1, sline:.3, roll:.25, flick:.2, vig:.4, fps:12, play:false, prop:false, kern:.7, frame:'mpu', fit:true, lead:.35, size:1, weight:0, track:1.4, gap:0, scan:false, black:0, transparent:false, soft:.45, ring:0, fringe:.5, cnoise:.6, noise:.12, lines:false};
+
+// ---------- font (default + this viewer's edits) ----------
+let allEdits = {'01':{}, '02':{}, '03':{}};
+try {
+  const st = JSON.parse(localStorage.getItem('screentext.edits.v2') || 'null');
+  if (st && typeof st === 'object') allEdits = Object.assign(allEdits, st);
+  else { const old = JSON.parse(localStorage.getItem('screentext.edits') || 'null'); if (old) allEdits['01'] = old; }
+} catch(e){}
+let edits = allEdits[fontId];
+function saveEdits(){ allEdits[fontId] = edits; try { localStorage.setItem('screentext.edits.v2', JSON.stringify(allEdits)); } catch(e){} }
+function glyph(ch){
+  const k = edits[ch] ?? FONT_DEFAULT.glyphs[ch];
+  return k ?? null;
+}
+
+// ---------- spacing ----------
+// Monospaced: every character takes the same cell (narrow glyphs centred), as the generators did.
+// Proportional: each glyph takes only its inked width plus tracking, and pairs are kerned by
+// comparing the facing edges row by row (so L-T, T-A, A-V etc. tuck together) without ever
+// bringing ink closer than the tracking gap.
+const profCache = {};
+function profile(ch){
+  const key = fontId + ch + (edits[ch] || '');
+  if (profCache[key]) return profCache[key];
+  const gl = glyph(ch) || glyph('?'), fw = FONT_DEFAULT.w, fh = FONT_DEFAULT.h;
+  let mn = fw, mx = -1; const L = [], R = [];
+  for (let r=0; r<fh; r++){
+    let a = -1, b = -1;
+    for (let q=0; q<fw; q++) if (gl[r*fw+q] === '#'){ if (a < 0) a = q; b = q; }
+    L.push(a); R.push(b);
+    if (a >= 0){ if (a < mn) mn = a; if (b > mx) mx = b; }
+  }
+  return profCache[key] = {gl, mn, mx, L, R, empty: mx < 0};
+}
+function placeLine(text){
+  const fw = FONT_DEFAULT.w, fh = FONT_DEFAULT.h, xs = [];
+  if (!P.prop){
+    text.forEach((ch, i) => { const p = profile(ch); xs.push(i*(fw + P.track) + (p.empty ? 0 : ((fw-1-p.mx) - p.mn)/2)); });
+    return {xs, w: text.length ? (text.length-1)*(fw + P.track) + fw : 0};
+  }
+  const spaceW = Math.max(2, Math.round(fw*0.6));
+  let x = 0, prev = null, end = 0;
+  text.forEach(ch => {
+    const p = profile(ch);
+    if (ch === ' ' || p.empty){ xs.push(x); x += spaceW + P.track; prev = null; return; }
+    let kern = 0;
+    if (prev && P.kern > 0){
+      let gap = Infinity;                                  // spare columns between the two glyphs, per shared row
+      for (let r=0; r<fh; r++){
+        if (prev.R[r] < 0 || p.L[r] < 0) continue;
+        const g = (prev.mx - prev.R[r]) + (p.L[r] - p.mn);
+        if (g < gap) gap = g;
+        // also look one row up/down so diagonals don't collide
+        if (r > 0 && p.L[r-1] >= 0){ const g2 = (prev.mx - prev.R[r]) + (p.L[r-1] - p.mn) - 0.5; if (g2 < gap) gap = g2; }
+        if (r < fh-1 && p.L[r+1] >= 0){ const g3 = (prev.mx - prev.R[r]) + (p.L[r+1] - p.mn) - 0.5; if (g3 < gap) gap = g3; }
+      }
+      if (gap === Infinity) gap = Math.min(prev.mx - prev.mn, p.mx - p.mn);   // no shared rows (e.g. ' then .)
+      kern = Math.max(0, gap)*P.kern;
+    }
+    x -= kern;
+    xs.push(x - p.mn);
+    x += (p.mx - p.mn + 1);
+    end = x;
+    x += P.track;
+    prev = p;
+  });
+  return {xs, w: Math.max(0, end)};
+}
+
+// ---------- text layer ----------
+function layout(){
+  const lines = ['txt','txt2','txt3','txt4'].map(id => [...(document.getElementById(id).value || '').toUpperCase()]);
+  while (lines.length > 1 && !lines[lines.length-1].length) lines.pop();          // drop empty lines at the end
+  const fw = FONT_DEFAULT.w, fh = FONT_DEFAULT.h, cw = FONT_DEFAULT.cw, rh = FONT_DEFAULT.rh;
+  const unitW = t => placeLine(t).w*cw;                                                // width in dot units
+  const maxU = Math.max(fw*cw, ...lines.map(unitW));
+  const leadRows = Math.round(P.lead*fh);                                          // whole dot rows, so scanlines stay aligned on every line
+  const unitH = lines.length*fh*rh + (lines.length-1)*leadRows*rh;
+  let scale;
+  if (P.frame === 'mpu'){
+    FW = Math.round(1200*RS); FH = Math.round(1000*RS);
+    scale = P.fit ? Math.min(FW*0.86/maxU, FH*0.80/unitH) : K*P.size*RS;
+  } else {
+    scale = K*P.size*RS;
+    FW = Math.max(Math.round(1920*RS), Math.ceil(maxU*scale + PAD*RS*2)); FH = Math.ceil(unitH*scale + PAD*RS*2);
+  }
+  const colW = cw*scale, rowH = rh*scale, adv = (fw + P.track)*colW, leadH = leadRows*rowH;
+  const textH = lines.length*fh*rowH + (lines.length-1)*leadH;
+  const rowsOut = lines.map((t, i) => ({text:t, w: unitW(t)*scale, y: Math.round((FH - textH)/2 + i*(fh*rowH + leadH))}));
+  return {lines: rowsOut, fw, fh, colW, rowH, adv, textH, top: Math.round((FH - textH)/2), scale};
+}
+function drawText(c, L){
+  for (const ln of L.lines) drawLine(c, L, ln.text, (FW - ln.w)/2, ln.y);
+}
+function drawLine(c, L, text, x0, y0){
+  const gx = L.colW*P.gap*0.5, gy = L.rowH*P.gap*0.5;
+  c.fillStyle = '#ededed';
+  const place = placeLine(text);
+  text.forEach((ch, i) => {
+    const gl = glyph(ch) || glyph('?');
+    if (!gl) return;
+    // centre narrow glyphs in the cell, as the generators did (half-dot steps allowed)
+    const cx = x0 + place.xs[i]*L.colW;
+    const inset = L.colW*0.07, grow = P.weight*L.colW*0.55;   // weight thickens strokes sideways only, so rows and scanlines stay put                              // generator strokes read slightly thinner than a full dot pair
+    for (let r=0; r<L.fh; r++){
+      const ya = Math.round(y0 + r*L.rowH + gy/2), yb = Math.round(y0 + (r+1)*L.rowH - gy/2);
+      if (P.gap > 0){
+        for (let q=0; q<L.fw; q++){
+          if (gl[r*L.fw + q] !== '#') continue;
+          const xa = Math.round(cx + q*L.colW + gx/2 - grow), xb = Math.round(cx + (q+1)*L.colW - gx/2 + grow);
+          c.fillRect(xa, ya, Math.max(1, xb-xa), Math.max(1, yb-ya));
+        }
+        continue;
+      }
+      for (let q=0; q<L.fw; q++){
+        if (gl[r*L.fw + q] !== '#') continue;
+        let e = q; while (e+1 < L.fw && gl[r*L.fw + e+1] === '#') e++;
+        const xa = cx + q*L.colW + inset - grow, xb = cx + (e+1)*L.colW - inset + grow;
+        c.fillRect(xa, ya, Math.max(1, xb-xa), Math.max(1, yb-ya));
+        q = e;
+      }
+    }
+  });
+}
+
+// ---------- video stage ----------
+// Modelled on the close-up: luma is soft over ~3 px (at 1024 wide) with no visible overshoot;
+// white has no colour of its own, so the colour comes from cross-colour on the edges
+// (blue/lavender on rising edges, yellow-green on falling ones) and from low-frequency
+// chroma noise that tints the strokes pink or green in short horizontal patches.
+function gauss1(src, dst, w, h, sigma){
+  if (sigma < 0.2){ dst.set(src); return; }
+  const r = Math.ceil(sigma*3), ker = new Float32Array(2*r+1); let sum = 0;
+  for (let i=-r; i<=r; i++){ ker[i+r] = Math.exp(-i*i/(2*sigma*sigma)); sum += ker[i+r]; }
+  for (let i=0; i<ker.length; i++) ker[i] /= sum;
+  for (let y=0; y<h; y++){
+    const o = y*w;
+    for (let x=0; x<w; x++){
+      let a = 0;
+      for (let k=-r; k<=r; k++){ const xx = x+k < 0 ? 0 : (x+k >= w ? w-1 : x+k); a += src[o+xx]*ker[k+r]; }
+      dst[o+x] = a;
+    }
+  }
+}
+function gaussV(src, dst, w, h, sigma){
+  if (sigma < 0.2){ dst.set(src); return; }
+  const r = Math.ceil(sigma*3), ker = new Float32Array(2*r+1); let sum = 0;
+  for (let i=-r; i<=r; i++){ ker[i+r] = Math.exp(-i*i/(2*sigma*sigma)); sum += ker[i+r]; }
+  for (let i=0; i<ker.length; i++) ker[i] /= sum;
+  for (let y=0; y<h; y++) for (let x=0; x<w; x++){
+    let a = 0;
+    for (let k=-r; k<=r; k++){ const yy = y+k < 0 ? 0 : (y+k >= h ? h-1 : y+k); a += src[yy*w+x]*ker[k+r]; }
+    dst[y*w+x] = a;
+  }
+}
+function hash2(a, b, c){
+  let h = Math.imul(a|0, 0x27d4eb2d) ^ Math.imul((b|0) + 0x3c6ef372, 0x165667b1) ^ Math.imul((c|0) + 0x1b873593, 0x9e3779b1);
+  h ^= h>>>15; h = Math.imul(h, 0x85ebca6b); h ^= h>>>13; return (h>>>0)/4294967296;
+}
+function smooth2(x, y, k){
+  const i = Math.floor(x), j = Math.floor(y); let u = x-i, v = y-j; u = u*u*(3-2*u); v = v*v*(3-2*v);
+  const a = hash2(i,j,k), b = hash2(i+1,j,k), c = hash2(i,j+1,k), d = hash2(i+1,j+1,k);
+  return a + (b-a)*u + (c-a)*v + (a-b-c+d)*u*v;
+}
+function video(img, w, h, alphaMode, L){
+  const d = img.data, n = w*h, k = 1920/1024*RS*Math.sqrt(L.scale/(K*RS));
+  const Y = new Float32Array(n), T = new Float32Array(n), A = new Float32Array(n);
+  for (let i=0, j=0; i<n; i++, j+=4){ Y[i] = 0.299*d[j] + 0.587*d[j+1] + 0.114*d[j+2]; A[i] = d[j+3]; }
+  // luma bandwidth
+  const sig = (0.15 + P.soft*1.6)*k;
+  gauss1(Y, T, w, h, sig); Y.set(T);
+  gaussV(Y, T, w, h, 0.25*k*P.soft); Y.set(T);
+  if (P.ring > 0){
+    gauss1(Y, T, w, h, sig*2.5 + k);
+    const a = P.ring*0.8; for (let i=0; i<n; i++) Y[i] += (Y[i] - T[i])*a;
+  }
+  if (alphaMode){ gauss1(A, T, w, h, sig); A.set(T); gaussV(A, T, w, h, 0.25*k*P.soft); A.set(T); }
+  // cross-colour from the luma slope, kept low-bandwidth like real chroma
+  const U = new Float32Array(n), V = new Float32Array(n);
+  for (let y=0; y<h; y++){ const o = y*w; for (let x=1; x<w-1; x++){ const g = (Y[o+x+1] - Y[o+x-1])*0.5; U[o+x] = g; V[o+x] = g; } }
+  const cs = (0.8 + P.soft*1.2)*k;
+  gauss1(U, T, w, h, cs); U.set(T);
+  const lag = Math.round(0.7*k);                      // chroma a touch late, so the tint sits on the edge itself
+  const fu = P.fringe*2.1, fv = P.fringe*1.0;
+  // chroma noise: short horizontal patches, one row of patches per text dot row
+  const cnA = P.cnoise*30, rowH = L.rowH, patch = 3.2*k;
+  const lumaN = P.noise*14;
+  const lines = P.lines;
+  for (let y=0; y<h; y++){
+    const ln = lines && ((y/(K*RS)|0) & 1) ? 0.92 : 1;
+    const py = y/rowH;
+    for (let x=0; x<w; x++){
+      const i = y*w + x, j = i*4;
+      const xi = x - lag < 0 ? 0 : x - lag;
+      const s = U[y*w + xi];
+      let yy = Y[i];
+      let u = s*fu, v = s*fv;
+      if (cnA > 0){
+        const bright = yy/255;
+        const nu = smooth2(x/patch, py*1.0, 71) - 0.5, nv = smooth2(x/patch, py*1.0 + 13.7, 72) - 0.5;
+        u += nu*cnA*bright*1.2; v += nv*cnA*bright*1.6;
+        u += (smooth2(x/(patch*0.6), y/(patch*0.8), 73) - 0.5)*cnA*0.25;     // faint tint in the black too
+      }
+      if (lumaN > 0) yy += (hash2(x, y, 5) + hash2(x, y, 6) - 1)*lumaN;
+      let r = (yy + 1.14*v)*ln, g = (yy - 0.395*u - 0.581*v)*ln, b = (yy + 2.03*u)*ln;
+      d[j] = r; d[j+1] = g; d[j+2] = b;
+      if (alphaMode) d[j+3] = A[i];
+    }
+  }
+  return img;
+}
+
+// ---------- static (before the video look) ----------
+function vn1(x, k1, k2){ const i = Math.floor(x); let t = x - i; t = t*t*(3-2*t); const a = hash2(i, k1, k2); return a + (hash2(i+1, k1, k2) - a)*t; }
+function staticPass(img, w, h, alpha, L){
+  const d = img.data, t = TF;
+  // 1. tearing + wave: whole rows slide sideways
+  if (P.tear > 0 || P.wave > 0){
+    const row = new Uint8ClampedArray(w*4), bh = Math.max(2, L.rowH*0.9);
+    for (let y=0; y<h; y++){
+      const band = Math.floor(y/bh), hb = hash2(band, t>>1, 401);
+      let dx = 0;
+      if (hb < P.tear*0.35) dx += (hash2(band, t, 402) - 0.5)*w*0.16*P.tear*(0.4 + hb*3);
+      if (P.wave > 0) dx += (Math.sin(y/(h*0.11) + t*0.45) + (vn1(y/(L.rowH*1.7) + t*0.3, 7, 403) - 0.5)*1.6)*P.wave*w*0.012;
+      dx = Math.round(dx);
+      if (!dx) continue;
+      const o = y*w*4; row.set(d.subarray(o, o + w*4));
+      for (let x=0; x<w; x++){
+        const sx = x - dx, j = o + x*4;
+        if (sx < 0 || sx >= w){ d[j] = d[j+1] = d[j+2] = alpha ? 255 : 0; d[j+3] = alpha ? 0 : 255; continue; }
+        const k = sx*4; d[j] = row[k]; d[j+1] = row[k+1]; d[j+2] = row[k+2]; d[j+3] = row[k+3];
+      }
+    }
+  }
+  // 2-4. breakup of the letters, static dashes, interference lines
+  const g = P.sgrain*RS*(w/(1200*RS) > 1.4 ? 1.4 : 1), rh = Math.max(1, Math.round(g*0.6));
+  const amt = P.stat, brk = P.brk, il = P.ilines*0.035, lfS = 1/(90*RS), lfY = 1/(30*RS);
+  // where the lettering is: per row, its left/right extent, then the nearest lettered row for every row
+  const rMin = new Int32Array(h).fill(-1), rMax = new Int32Array(h).fill(-1);
+  for (let y=0; y<h; y++){
+    const o = y*w*4; let a = -1, b = -1;
+    for (let x=0; x<w; x++){ const on = alpha ? d[o+x*4+3] > 128 : d[o+x*4] > 128; if (on){ if (a < 0) a = x; b = x; } }
+    rMin[y] = a; rMax[y] = b;
+  }
+  const near = new Int32Array(h).fill(-1), BIG = 1e9;
+  { let last = -BIG; const up = new Float64Array(h);
+    for (let y=0; y<h; y++){ if (rMin[y] >= 0) last = y; up[y] = last; }
+    let next = BIG;
+    for (let y=h-1; y>=0; y--){ if (rMin[y] >= 0) next = y; const a = up[y], b = next; near[y] = (y - a <= b - y) ? (a > -BIG ? a : (b < BIG ? b : -1)) : (b < BIG ? b : -1); } }
+  const spreadX = (0.03 + P.spread*0.3)*w, spreadY = L.rowH*(0.6 + P.spread*2.5);
+  for (let y=0; y<h; y++){
+    const ny = near[y];
+    if (ny < 0) continue;                                              // no lettering anywhere
+    const dv = Math.abs(y - ny), vf = Math.exp(-dv/spreadY);
+    if (vf < 0.02) continue;                                           // far from the text: leave the black alone
+    // the text's span on this line (taken from the nearest lettered rows around it)
+    let mnx = rMin[ny], mxx = rMax[ny];
+    for (let k=-2; k<=2; k++){ const yy = ny + Math.round(k*L.rowH); if (yy >= 0 && yy < h && rMin[yy] >= 0){ if (rMin[yy] < mnx) mnx = rMin[yy]; if (rMax[yy] > mxx) mxx = rMax[yy]; } }
+    const sy = (y/rh)|0, rowH = hash2(sy, 9, 410), dl = Math.max(1, Math.round(g*(1.2 + rowH*rowH*7)));
+    const ph = Math.floor(hash2(sy, t, 411)*64);
+    const bf = vn1(y/(L.rowH*1.6) + t*0.17, 3, 412);              // breakup comes in drifting bands
+    const iline = hash2(sy, t, 413) < il && dv < L.rowH*2;
+    const sdl = dl*3, sph = Math.floor(hash2(sy, t, 420)*200);       // streak dashes are longer than the grain
+    const dir = hash2(sy, t>>1, 421) < 0.5 ? 1 : -1;                    // smear runs left or right per row
+    let run = 0, runL = 0;
+    if (P.smear > 0 && dir < 0){                                        // leftward smear: pre-scan the row from the right
+      runL = 0;
+    }
+    const decay = Math.exp(-1/Math.max(0.5, P.smear*w*0.03));
+    const smearRow = P.smear > 0 && hash2(sy, t, 422) < 0.25 + P.smear*0.6;
+    for (let xx=0; xx<w; xx++){
+      const x = dir > 0 ? xx : w - 1 - xx;
+      const j = (y*w + x)*4, cell = ((x + ph)/dl)|0, scell = ((x + sph)/sdl)|0;
+      const on = alpha ? d[j+3] > 128 : d[j] > 128;
+      // smear: letters trail a fading streak along the row
+      if (smearRow){
+        const lv = (alpha ? d[j+3] : d[j])/255;
+        run = Math.max(lv, run*decay);
+        if (!on && run > 0.04){
+          const sv = run*0.7*(hash2(scell, sy, t + 423) < 0.75 ? 1 : 0.2);
+          if (alpha){ if (sv*255 > d[j+3]){ d[j] = d[j+1] = d[j+2] = 235; d[j+3] = sv*255; } }
+          else if (sv*255 > d[j]){ d[j] = d[j+1] = d[j+2] = sv*255; }
+        }
+      }
+      if (on && brk > 0 && hash2(cell, sy, t*3 + 414) < brk*(0.15 + bf*1.3)*0.8){
+        if (alpha) d[j+3] = 0; else { d[j] = d[j+1] = d[j+2] = 0; }
+        continue;
+      }
+      let v = 0;
+      // streaks: dashes along the rows of the lettering, thinning out with distance from it
+      const dh = x < mnx ? mnx - x : (x > mxx ? x - mxx : 0), hf = Math.exp(-dh/spreadX)*vf;
+      if (amt > 0 && hf > 0.01){
+        const lf = vn1((x + y*0.7)*lfS + t*0.05, (y*lfY)|0, 415);
+        const q = hash2(scell, sy, t*5 + 416);
+        if (q < amt*hf*(0.25 + lf*0.9)*0.28) v = 0.35 + 0.6*hash2(scell, sy, t + 419);
+      }
+      if (iline && hf > 0.05 && hash2(cell, sy, t + 417) > 0.25) v = Math.max(v, (0.75 + 0.25*hash2(cell, sy, 418))*Math.min(1, hf*3));
+      if (v > 0){
+        const vv = Math.min(255, v*255);
+        if (alpha){ if (vv > d[j+3]){ d[j] = d[j+1] = d[j+2] = 235; d[j+3] = vv; } }
+        else if (vv > d[j]){ d[j] = d[j+1] = d[j+2] = vv; }
+      }
+    }
+  }
+}
+// ---------- CRT finishing (after the video look) ----------
+function crtPass(img, w, h){
+  const d = img.data, t = TF;
+  const pitch = Math.max(2, 4*RS), depth = P.sline*0.6;
+  const fl = 1 + (hash2(t, 1, 501) - 0.5)*P.flick*0.3 + (hash2(t>>2, 2, 502) - 0.5)*P.flick*0.15;
+  const barY = (((t*0.022) % 1.5) - 0.25)*h, barH = h*0.22, roll = P.roll;
+  const vig = P.vig, ex = 1.5*Math.pow(40, 0.55), pw = 6;
+  for (let y=0; y<h; y++){
+    const sl = ((y % pitch) >= pitch*0.55) ? 1 - depth : 1;
+    const db = (y - barY)/barH, bar = roll > 0 ? 1 + roll*0.35*Math.exp(-db*db*3) - roll*0.18*Math.exp(-(db+0.9)*(db+0.9)*30) : 1;
+    const rowF = sl*bar*fl, v = Math.abs((y + 0.5)/h*2 - 1), vp = Math.pow(v, pw);
+    for (let x=0; x<w; x++){
+      const j = (y*w + x)*4;
+      let f = rowF;
+      if (vig > 0){ const u = Math.abs((x + 0.5)/w*2 - 1), dd = Math.pow(Math.pow(u, pw) + vp, 1/pw); f *= 1 - vig*Math.pow(dd > 1 ? 1 : dd, ex); }
+      d[j] *= f; d[j+1] *= f; d[j+2] *= f;
+    }
+  }
+}
+
+// ---------- compose ----------
+function render(){
+  const L = layout();
+  if (cv.width !== FW || cv.height !== FH){ cv.width = FW; cv.height = FH; }
+  const c = ctx;
+  c.clearRect(0, 0, FW, FH);
+  if (!P.transparent){ const lift = Math.round(P.black*255); c.fillStyle = `rgb(${lift},${lift},${lift})`; c.fillRect(0, 0, FW, FH); }
+  drawText(c, L);
+  if (P.scan){
+    // scanlines are cut across the whole line of text on a fixed pitch tied to the font's dot grid,
+    // so every letter shares the same stripes
+    const sc = FONT_DEFAULT.scan || DEFAULT_SCAN[fontId], pitch = L.rowH/sc.lines, gap = Math.max(1, pitch*sc.gap);
+    const y0 = L.top - L.rowH, y1 = L.top + L.textH + L.rowH;
+    c.fillStyle = '#000';
+    for (let y = y0 + L.rowH; y < y1; y += pitch){
+      const ga = Math.round(y + pitch - gap), gb = Math.round(y + pitch);
+      if (P.transparent) c.clearRect(0, ga, FW, gb-ga); else c.fillRect(0, ga, FW, gb-ga);
+    }
+  }
+  const img = c.getImageData(0, 0, FW, FH);
+  staticPass(img, FW, FH, P.transparent, L);
+  video(img, FW, FH, P.transparent, L);
+  crtPass(img, FW, FH);
+  c.putImageData(img, 0, 0);
+}
+let pending = false;
+function queue(){ if (!pending){ pending = true; requestAnimationFrame(() => { pending = false; render(); }); } }
+
+// ---------- controls ----------
+const pct = v => Math.round(v) + '%';
+const S = {
+  size:{to:v=>v/100, fmt:pct}, stat:{to:v=>v/100, fmt:pct}, smear:{to:v=>v/100, fmt:pct}, spread:{to:v=>v/100, fmt:pct}, sgrain:{to:v=>+v, fmt:v=>(+v).toFixed(1)+'px'}, brk:{to:v=>v/100, fmt:pct}, ilines:{to:v=>v/100, fmt:pct},
+  tear:{to:v=>v/100, fmt:pct}, wave:{to:v=>v/100, fmt:pct}, sline:{to:v=>v/100, fmt:pct}, roll:{to:v=>v/100, fmt:pct}, flick:{to:v=>v/100, fmt:pct}, vig:{to:v=>v/100, fmt:pct}, fps:{to:v=>+v, fmt:v=>v+' fps'}, kern:{to:v=>v/100, fmt:v=>v==0?'Off':pct(v)}, lead:{to:v=>v/100, fmt:v=>v+'% of a line'}, weight:{to:v=>v/100, fmt:v=>v==0?'Regular':pct(v)}, track:{to:v=>v/10, fmt:v=>(v/10).toFixed(1)+' dots'},
+  gap:{to:v=>v/100, fmt:pct}, 
+  soft:{to:v=>v/100, fmt:pct}, ring:{to:v=>v/100, fmt:pct}, fringe:{to:v=>v/100, fmt:pct}, cnoise:{to:v=>v/100, fmt:pct}, noise:{to:v=>v/100, fmt:pct}
+};
+function setSlider(id, v){ const el = document.getElementById(id); el.value = v; P[id] = S[id].to(+el.value); document.getElementById('o-'+id).textContent = S[id].fmt(+el.value); }
+for (const id in S){
+  const el = document.getElementById(id);
+  el.addEventListener('input', () => { setSlider(id, el.value); if (['soft','ring','fringe','cnoise','noise'].includes(id)) markLook(null); queue(); });
+  setSlider(id, el.value);
+}
+['txt','txt2','txt3','txt4'].forEach(id => document.getElementById(id).addEventListener('input', queue));
+function setFrame(f){ P.frame = f; document.querySelectorAll('[data-frame]').forEach(b => b.setAttribute('aria-pressed', b.dataset.frame === f)); syncFit(); queue(); }
+function syncFit(){ const on = P.frame === 'mpu' && P.fit; document.getElementById('size').disabled = on; document.getElementById('fit').disabled = P.frame !== 'mpu'; document.getElementById('o-size').textContent = on ? 'Auto' : S.size.fmt(document.getElementById('size').value); }
+document.querySelectorAll('[data-frame]').forEach(b => b.addEventListener('click', () => setFrame(b.dataset.frame)));
+document.getElementById('fit').addEventListener('change', e => { P.fit = e.target.checked; syncFit(); queue(); });
+document.getElementById('lines').addEventListener('change', e => { P.lines = e.target.checked; queue(); });
+function syncKern(){ document.getElementById('kern').disabled = !P.prop; }
+document.getElementById('prop').addEventListener('change', e => { P.prop = e.target.checked; syncKern(); queue(); });
+document.getElementById('scan').addEventListener('change', e => { P.scan = e.target.checked; queue(); });
+const LOOKS = { clean:{soft:8, ring:0, fringe:0, cnoise:0, noise:0}, broadcast:{soft:45, ring:0, fringe:50, cnoise:60, noise:12}, tape:{soft:75, ring:35, fringe:85, cnoise:80, noise:35} };
+function markLook(name){ document.querySelectorAll('[data-look]').forEach(x => x.setAttribute('aria-pressed', x.dataset.look === name)); }
+document.querySelectorAll('[data-look]').forEach(b => b.addEventListener('click', () => {
+  const L = LOOKS[b.dataset.look]; for (const k in L) setSlider(k, L[k]); markLook(b.dataset.look); queue();
+}));
+
+// ---------- static presets ----------
+const ST_KEYS = ['stat','smear','spread','sgrain','brk','ilines','tear','wave','sline','roll','flick','vig'];
+const ST_PRESETS = {
+  off:{stat:0, smear:0, spread:35, sgrain:2, brk:0, ilines:0, tear:0, wave:0, sline:0, roll:0, flick:0, vig:0},
+  light:{stat:40, smear:35, spread:30, sgrain:2, brk:20, ilines:15, tear:15, wave:10, sline:30, roll:25, flick:20, vig:40},
+  heavy:{stat:80, smear:70, spread:55, sgrain:3, brk:30, ilines:40, tear:50, wave:35, sline:55, roll:55, flick:50, vig:65}
+};
+function markSt(name){ document.querySelectorAll('[data-st]').forEach(x => x.setAttribute('aria-pressed', x.dataset.st === name)); }
+document.querySelectorAll('[data-st]').forEach(b => b.addEventListener('click', () => {
+  const p = ST_PRESETS[b.dataset.st]; for (const k of ST_KEYS) setSlider(k, p[k]); markSt(b.dataset.st); queue();
+}));
+ST_KEYS.forEach(k => document.getElementById(k).addEventListener('input', () => markSt(null)));
+
+// ---------- animation ----------
+let lastT = 0, rafId = 0;
+function loop(ts){
+  if (!P.play) return;
+  if (ts - lastT >= 1000/P.fps){ lastT = ts; TF++; render(); }
+  rafId = requestAnimationFrame(loop);
+}
+function setPlay(on){
+  P.play = on; RS = on ? 0.5 : 1;
+  const b = document.getElementById('play'); b.setAttribute('aria-pressed', on); b.textContent = on ? 'Pause' : 'Play';
+  cancelAnimationFrame(rafId);
+  if (on){ lastT = 0; rafId = requestAnimationFrame(loop); } else render();
+}
+document.getElementById('play').addEventListener('click', () => setPlay(!P.play));
+const recBtn = document.getElementById('rec');
+if (!window.MediaRecorder || !cv.captureStream) recBtn.disabled = true;
+recBtn.addEventListener('click', () => {
+  if (recBtn.disabled) return;
+  const wasPlaying = P.play; if (!wasPlaying) setPlay(true);
+  const type = ['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'].find(t => MediaRecorder.isTypeSupported(t));
+  if (!type){ setStatus('This browser cannot record video clips.'); return; }
+  const rec = new MediaRecorder(cv.captureStream(P.fps), {mimeType:type, videoBitsPerSecond:8e6}), chunks = [];
+  rec.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
+  rec.onstop = () => { recBtn.disabled = false; recBtn.textContent = 'Record 4 s clip'; if (!wasPlaying) setPlay(false); offer(slug() + '.webm', new Blob(chunks, {type:'video/webm'}), 'video/webm'); };
+  recBtn.disabled = true; recBtn.textContent = 'Recording…';
+  rec.start(); setTimeout(() => rec.stop(), 4000);
+});
+
+// ---------- glyph editor ----------
+const gridEl = document.getElementById('glyphGrid'), setEl = document.getElementById('charset');
+let cur = 'A', painting = null;
+function buildCharset(){
+  setEl.innerHTML = '';
+  Object.keys(FONT_DEFAULT.glyphs).filter(c => c !== ' ').forEach(ch => {
+    const b = document.createElement('button'); b.type = 'button'; b.textContent = ch;
+    b.setAttribute('aria-pressed', ch === cur); if (edits[ch]) b.classList.add('edited');
+    b.addEventListener('click', () => { cur = ch; buildCharset(); buildGrid(); });
+    setEl.appendChild(b);
+  });
+}
+function buildGrid(){
+  gridEl.innerHTML = '';
+  gridEl.style.gridTemplateColumns = `repeat(${FONT_DEFAULT.w}, 1fr)`;
+  gridEl.style.setProperty('--ar', String(Math.min(2.6, FONT_DEFAULT.cw/FONT_DEFAULT.rh)));
+  const gl = glyph(cur);
+  for (let i=0; i<FONT_DEFAULT.w*FONT_DEFAULT.h; i++){
+    const b = document.createElement('button'); b.type = 'button';
+    b.dataset.i = i; if (gl[i] === '#') b.classList.add('on');
+    b.setAttribute('aria-label', 'Row ' + (Math.floor(i/FONT_DEFAULT.w)+1) + ', column ' + (i%FONT_DEFAULT.w+1));
+    gridEl.appendChild(b);
+  }
+}
+function setDot(i, on){
+  const gl = glyph(cur).split('');
+  if ((gl[i] === '#') === on) return;
+  gl[i] = on ? '#' : '.';
+  const s = gl.join('');
+  if (s === FONT_DEFAULT.glyphs[cur]) delete edits[cur]; else edits[cur] = s;
+  gridEl.children[i].classList.toggle('on', on);
+  saveEdits(); queue();
+}
+gridEl.addEventListener('pointerdown', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  e.preventDefault();
+  painting = !b.classList.contains('on'); setDot(+b.dataset.i, painting);
+});
+gridEl.addEventListener('pointermove', e => {
+  if (painting === null) return;
+  const b = document.elementFromPoint(e.clientX, e.clientY)?.closest('#glyphGrid button');
+  if (b) setDot(+b.dataset.i, painting);
+});
+window.addEventListener('pointerup', () => { if (painting !== null){ painting = null; buildCharset(); } });
+gridEl.addEventListener('keydown', e => { if (e.key === ' ' || e.key === 'Enter'){ const b = e.target.closest('button'); if (b){ e.preventDefault(); setDot(+b.dataset.i, !b.classList.contains('on')); buildCharset(); } } });
+document.getElementById('gReset').addEventListener('click', () => { delete edits[cur]; saveEdits(); buildCharset(); buildGrid(); queue(); });
+let confirmAll = 0;
+document.getElementById('gResetAll').addEventListener('click', e => {
+  const n = Object.keys(edits).length;
+  if (!n){ setStatus('The font has no edits to reset.'); return; }
+  if (Date.now() - confirmAll > 3000){ confirmAll = Date.now(); e.target.textContent = 'Click again to reset ' + n; setTimeout(() => e.target.textContent = 'Reset whole font', 3000); return; }
+  edits = {}; saveEdits(); buildCharset(); buildGrid(); queue(); e.target.textContent = 'Reset whole font'; setStatus('Font reset to the original glyphs.');
+});
+
+// ---------- files ----------
+function setStatus(t){ document.getElementById('status').textContent = t; }
+let downloads = null;
+(async () => { try { downloads = await window.claude?.use?.('downloads'); } catch(e){ downloads = null; } })();
+async function offer(name, blob, mime){
+  if (downloads){
+    try { await downloads.save({filename:name, data:blob}); setStatus('Saved ' + name); return; }
+    catch(err){ if (err && err.code === 'declined'){ setStatus('Save cancelled.'); return; } }
+  }
+  if (!window.claude){ const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click(); setStatus('Saved ' + name); return; }
+  if (mime === 'image/png'){ const img = document.getElementById('saved'); img.src = URL.createObjectURL(blob); img.hidden = false; setStatus('Right-click or long-press the image below to save it.'); }
+  else setStatus('Saving files is not available in this view.');
+}
+const slug = () => (['txt','txt2','txt3','txt4'].map(id => document.getElementById(id).value).filter(Boolean).join(' ') || 'screen-text').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,40) || 'screen-text';
+document.getElementById('saveFrame').addEventListener('click', () => { const rs = RS; RS = 1; render(); cv.toBlob(b => { RS = rs; render(); offer(slug() + '.png', b, 'image/png'); }, 'image/png'); });
+document.getElementById('saveBand').addEventListener('click', () => {
+  const rs = RS; RS = 1; P.transparent = true; render();
+  cv.toBlob(bl => { P.transparent = false; RS = rs; render(); offer(slug() + '-transparent.png', bl, 'image/png'); }, 'image/png');
+});
+document.getElementById('gExport').addEventListener('click', () => {
+  const f = {name:FONT_DEFAULT.name + (Object.keys(edits).length ? ' (edited)' : ''), w:FONT_DEFAULT.w, h:FONT_DEFAULT.h, cw:FONT_DEFAULT.cw, rh:FONT_DEFAULT.rh, track:FONT_DEFAULT.track, scan:FONT_DEFAULT.scan, glyphs:{...FONT_DEFAULT.glyphs, ...edits}};
+  offer(FONT_DEFAULT.name.toLowerCase().replace(/ /g,'-') + '.json', new Blob([JSON.stringify(f, null, 1)], {type:'application/json'}), 'application/json');
+});
+document.getElementById('gImport').addEventListener('change', e => {
+  const f = e.target.files[0]; if (!f) return;
+  const fr = new FileReader();
+  fr.onload = () => {
+    try {
+      const j = JSON.parse(fr.result);
+      const id = Object.keys(FONTS).find(k => FONTS[k].w === j.w && FONTS[k].h === j.h);
+      if (!id || !j.glyphs) throw new Error('size');
+      if (id !== fontId) switchFont(id);
+      edits = {};
+      for (const ch in j.glyphs){ const s = String(j.glyphs[ch]); if (s.length === j.w*j.h && s !== FONT_DEFAULT.glyphs[ch]) edits[ch] = s.replace(/[^#]/g,'.'); }
+      saveEdits(); buildCharset(); buildGrid(); queue(); setStatus('Imported ' + f.name);
+    } catch(err){ setStatus('That file is not a Screen Type font exported from this tool.'); }
+  };
+  fr.readAsText(f);
+});
+
+function switchFont(id){
+  fontId = id; FONT_DEFAULT = FONTS[id]; edits = allEdits[id] || (allEdits[id] = {});
+  document.querySelectorAll('[data-font]').forEach(b => b.setAttribute('aria-pressed', b.dataset.font === id));
+  setSlider('track', Math.round(FONT_DEFAULT.track*10));
+  P.scan = fontId === '03'; document.getElementById('scan').checked = P.scan;
+  P.prop = fontId === '03'; document.getElementById('prop').checked = P.prop; syncKern();
+  if (!FONT_DEFAULT.glyphs[cur]) cur = 'A';
+  buildCharset(); buildGrid(); queue();
+  try { localStorage.setItem('screentext.font', id); } catch(e){}
+}
+document.querySelectorAll('[data-font]').forEach(b => b.addEventListener('click', () => switchFont(b.dataset.font)));
+let startFont = '01'; try { startFont = localStorage.getItem('screentext.font') || '01'; } catch(e){}
+if (FONTS[startFont] && startFont !== '01') switchFont(startFont);
+buildCharset(); buildGrid(); syncFit(); syncKern(); render();
+</script>
