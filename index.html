@@ -14,7 +14,8 @@
     --stroke: #595959;
     --serif: "Times New Roman", Times, serif;
     --sans: Arial, Helvetica, sans-serif;
-    --h1: clamp(40px, 5.5vw, 68px);
+    --h1: clamp(32px, 4.4vw, 54px);
+    --logo-ref: clamp(40px, 5.5vw, 68px); /* logo size kept independent of heading */
   }
   * { box-sizing: border-box; }
   html { background: var(--bg); }
@@ -28,11 +29,11 @@
   h1 em { font-style: italic; font-weight: 700; color: var(--gold); }
   /* Logo is cropped so its bottom edge is the letters' baseline.
      Full size = Times cap height (0.662em) × logo box / logo cap height (205.2 / 114.1); shown at 50%. */
-  .logo { display: block; height: calc(var(--h1) * 1.1906 * 0.5); width: auto; overflow: visible; fill: #fff; flex: none; }
+  .logo { display: block; height: calc(var(--logo-ref) * 1.1906 * 0.5); width: auto; overflow: visible; fill: #fff; flex: none; }
   .intro { margin: 24px 0 0; color: var(--subcopy); max-width: 560px; }
 
   /* Search + tag filters */
-  .controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 8px 0 8px; border-top: 1px solid var(--stroke); padding-top: 32px; }
+  .controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 8px 0 8px; padding-top: 16px; }
   input[type=search] { flex: 1 1 280px; padding: 12px 16px; border: 1px solid var(--stroke); border-radius: 10px; background: transparent; color: var(--text); font: inherit; }
   input[type=search]::placeholder { color: var(--subcopy); }
   input[type=search]:focus { outline: none; border-color: var(--gold); }
@@ -43,7 +44,7 @@
 
   /* Tool cards */
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; padding: 32px 0 80px; }
-  .card { display: flex; flex-direction: column; gap: 10px; padding: 26px 26px 22px; border: 1px solid var(--gold); border-radius: 16px; text-decoration: none; color: inherit; transition: background .2s, transform .2s; }
+  .card { display: flex; flex-direction: column; gap: 10px; padding: 26px 26px 22px; border: 0.5px solid var(--gold); border-radius: 16px; text-decoration: none; color: inherit; transition: background .2s, transform .2s; }
   .card:hover, .card:focus-visible { background: rgba(219, 190, 138, 0.07); transform: translateY(-2px); outline: none; }
   .card h2 { margin: 0; font-family: var(--serif); font-weight: 400; font-size: 28px; line-height: 1.15; color: #fff; }
   .card h2::after { content: " →"; color: var(--gold); opacity: 0; transition: opacity .2s; }
