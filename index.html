@@ -14,7 +14,7 @@
     --stroke: #595959;
     --serif: "Times New Roman", Times, serif;
     --sans: Arial, Helvetica, sans-serif;
-    --h1: clamp(32px, 4.4vw, 54px);
+    --h1: clamp(26px, 3.5vw, 43px);
     --logo-ref: clamp(40px, 5.5vw, 68px); /* logo size kept independent of heading */
   }
   * { box-sizing: border-box; }
@@ -46,7 +46,7 @@
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; padding: 32px 0 80px; }
   .card { display: flex; flex-direction: column; gap: 10px; padding: 26px 26px 22px; border: 0.5px solid var(--gold); border-radius: 16px; text-decoration: none; color: inherit; transition: background .2s, transform .2s; }
   .card:hover, .card:focus-visible { background: rgba(219, 190, 138, 0.07); transform: translateY(-2px); outline: none; }
-  .card h2 { margin: 0; font-family: var(--serif); font-weight: 400; font-size: 28px; line-height: 1.15; color: #fff; }
+  .card h2 { margin: 0; font-family: var(--serif); font-weight: 400; font-size: 20px; line-height: 1.2; color: #fff; }
   .card h2::after { content: " →"; color: var(--gold); opacity: 0; transition: opacity .2s; }
   .card:hover h2::after { opacity: 1; }
   .card p { margin: 0; color: var(--subcopy); font-size: 15px; flex: 1; }
